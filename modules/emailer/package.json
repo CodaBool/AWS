@@ -1,0 +1,18 @@
+{
+  "name": "emailer",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "> assumes you have a Docker daemon and have ran `awsume`\r - `make build` builds the docker container\r - `make run` starts a simulated lambda on port 9000\r - `make test` sends a request to the simulated lambda which will potential send emails\r - `make clean` removes the container, necessary before building again",
+  "exports": "./main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-sns": "^3.231.0",
+    "aws-sdk": "^2.1277.0",
+    "axios": "^1.2.1"
+  }
+}
