@@ -48,14 +48,27 @@ export async function handler(event, context) {
     ssl: { rejectUnauthorized: false }
   })
   try {    
-    const creationKey = event.queryStringParameters?.key
-    const limit = event.queryStringParameters?.limit
-    
-    // console.log('body', event.body)
+    let creationKey = ''
+    let limit = 100
+
+    if (event["Records"] !== undefined) {
+      event.body = event["Records"][0].body
+      // console.log('body', event.body)
+      event.path = event.body.split('@')[0]
+      creationKey = event.body.split('@')[1]
+      if (creationKey === process.env.KEY) {
+        console.log('Triggered from SQS with an authorized write request')
+      }
+    } else {
+      console.log('Trigger from outside SQS')
+      creationKey = event.queryStringParameters?.key
+      limit = event.queryStringParameters?.limit
+    }
+
     console.log('query', event.queryStringParameters)
     console.log('path', event.path)
-    console.log('write_password', creationKey)
     console.log('limit', limit)
+    // console.log('body', event.body)
 
     if (creationKey) { // write
       if (creationKey !== process.env.KEY) throw 'Wrong key'
@@ -65,7 +78,6 @@ export async function handler(event, context) {
         response.body = await githubTrends()
       } else if (event.path === '/v1/upcoming_movies') {
         response.body = await getUpComingMovies()
-        console.log('body', response.body)
       } else if (event.path === '/v1/trending_movies') {
         response.body = await getTrendingMovie()
       } else if (event.path === '/v1/trending_tv') {

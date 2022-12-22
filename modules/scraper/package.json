@@ -13,7 +13,6 @@
   "dependencies": {
     "as-table": "^1.0.55",
     "axios": "^1.2.1",
-    "discord.js": "^14.7.1",
     "dotenv": "^16.0.3",
     "jsdom": "^20.0.3",
     "pg": "^8.8.0",
