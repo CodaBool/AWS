@@ -1,10 +1,10 @@
 # Emailer
 ### Commands
 > assumes you have a Docker daemon and have ran `awsume`
-- `make build` builds the docker container
-- `make run` starts a simulated lambda on port 9000
-- `make test` sends a request to the simulated lambda which will potential send emails
-- `make clean` removes the container, necessary before building again
+- `just build` builds the docker container
+- `just run` starts a simulated lambda on port 9000
+- `just test` sends a request to the simulated lambda which will potential send emails
+- `just clean` removes the container, necessary before building again
 
 <details>
 <summary style="font-size: 1.4rem;">Details</summary>
@@ -20,10 +20,11 @@
 docker run \
   -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
   -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-  -e AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN \
+  -e AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-''} \
   -p 9000:8080 \
+  --rm \
   --name emailer \
-  emailer:latest emailer
+  emailer:latest
 ```
 
 ### Test

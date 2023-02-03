@@ -1,12 +1,3 @@
-> a way to get your ip
-
-```tf
-# data.external.my_ip.result.ip
-data "external" "my_ip" {
-  program = ["curl", "https://ipinfo.io"]
-}
-```
-
 # EC2
 > check back in [cost explorer](https://us-east-1.console.aws.amazon.com/cost-management/home?region=us-east-1#/cost-explorer) in February
 
