@@ -12,10 +12,28 @@ terraform {
   }
 }
 
-module "emailer" {
-  source = "./modules/emailer"
+# module "emailer" {
+#   source = "./modules/emailer"
+# }
+module "texter" {
+  source = "./modules/texter"
 }
 
 module "scraper" {
   source = "./modules/scraper"
+}
+
+resource "aws_ssm_parameter" "all_env" {
+  name        = "/env"
+  description = "A comma seperated list of all aws envs"
+  type        = "SecureString"
+  value       = data.external.read_all_env.result.env
+}
+
+data "external" "read_all_env" {
+  program = ["bash", "readenv.sh"]
+}
+
+output "env" {
+  value = data.external.read_all_env.result.env
 }

@@ -13,10 +13,10 @@
 #   # EOF
 # }
 
-# resource "aws_iam_role_policy_attachment" "sns_publish" {
-#   role       = module.lambda.role
-#   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSIoTDeviceDefenderPublishFindingsToSNSMitigationAction"
-# }
+resource "aws_iam_role_policy_attachment" "sns_publish" {
+  role       = module.lambda.role
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSIoTDeviceDefenderPublishFindingsToSNSMitigationAction"
+}
 
 resource "aws_sns_topic" "email" {
   name              = var.name

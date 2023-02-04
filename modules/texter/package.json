@@ -1,0 +1,21 @@
+{
+  "name": "texter",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "text using twilio",
+  "exports": "./main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-sns": "^3.231.0",
+    "aws-sdk": "^2.1277.0",
+    "axios": "^1.2.1",
+    "dotenv": "^16.0.3",
+    "node-fetch": "^3.3.0",
+    "twilio": "^3.84.1"
+  }
+}

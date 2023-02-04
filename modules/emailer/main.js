@@ -12,7 +12,7 @@ export const handler = async (event, context) => {
   const command = new PublishCommand({
     Message: 'hello',
     Subject: 'sub',
-    TopicArn: 'arn:aws:sns:us-east-1:919759177803:emailer-expiring',
+    TopicArn: 'arn:aws:sns:us-east-1:919759177803:emailer',
   })
   
   let data
