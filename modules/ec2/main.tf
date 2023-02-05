@@ -1,10 +1,11 @@
 resource "aws_spot_instance_request" "main" {
-  ami                  = "ami-03a45a5ac837f33b7"
-  spot_price           = "0.0014" # max price to request, use describe-spot-price-history to find best price
+  ami                  = "ami-0720d270ba3fe7787"
+  # ami                  = "ami-03a45a5ac837f33b7" # ami-084237e82d7842286
+  spot_price           = "0.002400" # max price to request, use aws ec2 describe-spot-price-history
   wait_for_fulfillment = true     # wait up to 10min 
   instance_type        = "t4g.nano"
   subnet_id            = aws_default_subnet.a.id
-  user_data            = "sudo yum update" # doesnt seem like these were applied?
+  # user_data            = "sudo yum update" # doesnt seem like these were applied?
   # user_data_replace_on_change = true
   key_name               = aws_key_pair.main.key_name
   vpc_security_group_ids = [aws_security_group.main.id]
@@ -20,9 +21,11 @@ resource "tls_private_key" "rsa" {
   rsa_bits  = 4096
 }
 
-resource "local_file" "tf-key" {
+resource "local_file" "key" {
+  # gets placed on the root of where its ran
   content  = tls_private_key.rsa.private_key_pem
-  filename = var.name
+  file_permission = "600"
+  filename = "${var.name}.pem"
 }
 
 data "external" "my_ip" {
@@ -53,8 +56,8 @@ resource "aws_security_group" "main" {
   name   = var.name
   vpc_id = aws_default_vpc.default.id
   ingress {
-    from_port   = 3000
-    to_port     = 3000
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }

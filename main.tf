@@ -23,6 +23,18 @@ module "scraper" {
   source = "./modules/scraper"
 }
 
+module "cheapo" {
+  source = "./modules/ec2"
+}
+
+module "actions" {
+  source = "./modules/actions"
+}
+
+module "s3" {
+  source = "./modules/s3"
+}
+
 resource "aws_ssm_parameter" "all_env" {
   name        = "/env"
   description = "A comma seperated list of all aws envs"
@@ -34,6 +46,7 @@ data "external" "read_all_env" {
   program = ["bash", "readenv.sh"]
 }
 
-output "env" {
-  value = data.external.read_all_env.result.env
+output "actions_role" {
+  value       = module.actions.role_arn
+  description = "github actions assume role"
 }

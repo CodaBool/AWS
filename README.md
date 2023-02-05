@@ -5,6 +5,7 @@
 - `sudo yum update`
 - `sudo amazon-linux-extras install -y nginx1 && sudo systemctl enable nginx.service && sudo systemctl start nginx.service` start nginx
 - `aws --region=us-east-1 ec2 describe-spot-price-history --instance-types t4g.micro --start-time=$(date +%s) --product-descriptions="Linux/UNIX" --query 'SpotPriceHistory[*].{az:AvailabilityZone, price:SpotPrice}'`
+- `aws ec2 describe-images --owners amazon --filters "Name=name,Values=amzn*" "Name=architecture,Values=arm64" --query 'sort_by(Images, &CreationDate)[-1].ImageId' --output text`
 
 ### Memory
 - `top` use shift + m to sort by memory

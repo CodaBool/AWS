@@ -10,6 +10,7 @@ file_hashes="$(
   cd $path_to_dockerfile \
   && find . -type f -not -path './.**' \
     -not -path '*/venv/*' \
+    -not -path '*/node_modules/*' \
   | sort \
   | xargs md5sum
 )"
