@@ -7,9 +7,14 @@ variable "key_name" {
   default = "win"
 }
 
-variable "ami_name" {
+variable "instance_type" {
   type    = string
+  default = "t4g.nano"
 }
+
+# variable "ami_name" {
+#   type    = string
+# }
 
 variable "price" {
   type    = string

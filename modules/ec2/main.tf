@@ -1,9 +1,8 @@
 resource "aws_spot_instance_request" "main" {
-  ami                    = "ami-0645a14720cb2bf4a"
-  # ami                    = data.aws_ami.image.id
+  ami                    = data.aws_ami.image.id
   spot_price             = var.price    # max price to request, use aws ec2 describe-spot-price-history
   wait_for_fulfillment   = true          # wait up to 10min 
-  instance_type          = "t4g.nano"
+  instance_type          = var.instance_type
   subnet_id              = aws_default_subnet.a.id
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.main.id]
@@ -13,8 +12,8 @@ data "aws_ami" "image" {
   most_recent = true
   owners = ["self"]
   filter {
-    name   = "name"
-    values = [var.ami_name]
+    name = "tag:Name"
+    values = [var.name]
   }
 }
 
