@@ -18,9 +18,11 @@ data "aws_ami" "image" {
   }
 }
 
-data "external" "my_ip" {
-  program = ["curl", "https://ipinfo.io"]
-}
+# can use this to get ip with data.external.my_ip.result.ip
+# however, if running terraform in a pipeline this is moot
+# data "external" "my_ip" {
+#   program = ["curl", "https://ipinfo.io"]
+# }
 
 resource "aws_default_vpc" "default" {}
 # aws_default_vpc.default.cidr_block
@@ -55,7 +57,7 @@ resource "aws_security_group" "main" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["${data.external.my_ip.result.ip}/32"]
+    cidr_blocks = ["${var.ssh_ip}/32"]
   }
   egress {
     from_port   = 0

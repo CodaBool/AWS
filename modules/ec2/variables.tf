@@ -12,14 +12,14 @@ variable "profile_name" {
   default = "ec2_profile"
 }
 
+variable "ssh_ip" {
+  type    = string
+}
+
 variable "instance_type" {
   type    = string
   default = "t4g.nano"
 }
-
-# variable "ami_name" {
-#   type    = string
-# }
 
 variable "price" {
   type    = string
