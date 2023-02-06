@@ -6,7 +6,7 @@ resource "aws_spot_instance_request" "main" {
   subnet_id              = aws_default_subnet.a.id
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.main.id]
-  iam_instance_profile   = "arn:aws:iam::919759177803:instance-profile/ec2_profile"
+  iam_instance_profile   = var.profile_name
 }
 
 data "aws_ami" "image" {
