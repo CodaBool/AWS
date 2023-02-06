@@ -10,3 +10,8 @@ variable "key_name" {
 variable "ami_name" {
   type    = string
 }
+
+variable "price" {
+  type    = string
+  default = ".0024"
+}

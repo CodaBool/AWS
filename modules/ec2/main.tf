@@ -1,7 +1,7 @@
 resource "aws_spot_instance_request" "main" {
   ami                    = "ami-0645a14720cb2bf4a"
   # ami                    = data.aws_ami.image.id
-  spot_price             = ".0014"    # max price to request, use aws ec2 describe-spot-price-history
+  spot_price             = var.price    # max price to request, use aws ec2 describe-spot-price-history
   wait_for_fulfillment   = true          # wait up to 10min 
   instance_type          = "t4g.nano"
   subnet_id              = aws_default_subnet.a.id
