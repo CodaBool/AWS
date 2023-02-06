@@ -1,9 +1,4 @@
-use `aws ec2 describe-spot-price-history --instance-types t4g.nano --filters Name=spot-price,Values=0.001400 | jq -r '.SpotPriceHistory[] | "\(.SpotPrice) @ \(.AvailabilityZone)"'` to find best price spot instances
-
-
-or this one, but it seems wrong
-
-- `aws --region=us-east-1 ec2 describe-spot-price-history --instance-types t4g.micro --start-time=$(date +%s) --product-descriptions="Linux/UNIX" --query 'SpotPriceHistory[*].{az:AvailabilityZone, price:SpotPrice}'`
+use `aws --region=us-east-1 ec2 describe-spot-price-history --instance-types t4g.nano --start-time=$(date +%s) --product-descriptions="Linux/UNIX" --query 'SpotPriceHistory[*].{az:AvailabilityZone, price:SpotPrice}'` to find best price spot instances. Make sure to change instance type to match what you want to search
 
 
 #### Find latest al2 ami
