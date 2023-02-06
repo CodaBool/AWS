@@ -23,8 +23,13 @@ module "scraper" {
   source = "./modules/scraper"
 }
 
-module "cheapo" {
-  source = "./modules/ec2"
+# module "cheapo" {
+#   source = "./modules/ec2"
+# }
+
+module "key" {
+  source = "./modules/key"
+  key_name = "win"
 }
 
 module "actions" {

@@ -1,12 +1,10 @@
 resource "aws_spot_instance_request" "main" {
-  ami                  = data.aws_ami.image.id
-  # ami                  = "ami-03a45a5ac837f33b7" # ami-084237e82d7842286
-  spot_price           = "0.002400" # max price to request, use aws ec2 describe-spot-price-history
-  wait_for_fulfillment = true     # wait up to 10min 
-  instance_type        = "t4g.nano"
-  subnet_id            = aws_default_subnet.a.id
-  # user_data            = "sudo yum update" # doesnt seem like these were applied?
-  # user_data_replace_on_change = true
+  ami                    = "ami-0645a14720cb2bf4a"
+  # ami                    = data.aws_ami.image.id
+  spot_price             = ".0014"    # max price to request, use aws ec2 describe-spot-price-history
+  wait_for_fulfillment   = true          # wait up to 10min 
+  instance_type          = "t4g.nano"
+  subnet_id              = aws_default_subnet.a.id
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.main.id]
 }
@@ -14,28 +12,11 @@ resource "aws_spot_instance_request" "main" {
 data "aws_ami" "image" {
   most_recent = true
   owners = ["self"]
-
   filter {
     name   = "name"
     values = [var.ami_name]
   }
 }
-# resource "aws_key_pair" "main" {
-#   key_name   = var.name
-#   public_key = tls_private_key.rsa.public_key_openssh
-# }
-
-# resource "tls_private_key" "rsa" {
-#   algorithm = "RSA"
-#   rsa_bits  = 4096
-# }
-
-# resource "local_file" "key" {
-#   # gets placed on the root of where its ran
-#   content  = tls_private_key.rsa.private_key_pem
-#   file_permission = "600"
-#   filename = "${var.name}.pem"
-# }
 
 data "external" "my_ip" {
   program = ["curl", "https://ipinfo.io"]
