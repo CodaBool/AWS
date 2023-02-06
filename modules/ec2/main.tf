@@ -7,7 +7,7 @@ resource "aws_spot_instance_request" "main" {
   subnet_id            = aws_default_subnet.a.id
   # user_data            = "sudo yum update" # doesnt seem like these were applied?
   # user_data_replace_on_change = true
-  key_name               = aws_key_pair.main.key_name
+  key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.main.id]
 }
 
