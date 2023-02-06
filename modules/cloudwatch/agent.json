@@ -1,16 +1,17 @@
 {
   "agent": {
     "metrics_collection_interval": 60,
-    "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log",
+    "logfile": "/opt/aws/server.log",
     "omit_hostname": false,
     "debug": false
   },
   "metrics": {
     "force_flush_interval": 60,
+    "namespace": "Slap",
     "metrics_collected": {
       "cpu": {
-        "resources": "*",
         "totalcpu": false,
+        "resources": [ "*" ],
         "measurement": [
           "time_active", "time_guest", "time_guest_nice", "time_idle", "time_iowait", "time_irq", "time_nice", "time_softirq", "time_steal", "time_system", "time_user", "usage_active", "usage_guest", "usage_guest_nice", "usage_idle", "usage_iowait", "usage_irq", "usage_nice", "usage_softirq", "usage_steal", "usage_system", "usage_user"
         ],
@@ -63,10 +64,10 @@
       "files": {
         "collect_list": [
           {
-            "file_path": "/var/log/**.log",
+            "file_path": "/var/log/server.log",
             "auto_removal": false,
-            "log_group_name": "{instance_id} - {hostname} - {local_hostname}",
-            "log_stream_name": "custom, would use base log_stream_name {instance_id} - {hostname} - {local_hostname}",
+            "log_group_name": "/{instance_id}/{hostname}/{local_hostname}/",
+            "log_stream_name": "{instance_id} - {hostname} - {local_hostname}",
             "retention_in_days": 14,
             "timestamp_format": "%H: %M: %S%y%b%-d"
           }
