@@ -18,6 +18,18 @@ data "aws_ami" "image" {
   }
 }
 
+resource "aws_eip" "main" {
+  instance = aws_spot_instance_request.main.id
+}
+
+output "instance" {
+  value = aws_spot_instance_request.main
+}
+
+output "eip" {
+  value = aws_eip.main
+}
+
 # can use this to get ip with data.external.my_ip.result.ip
 # however, if running terraform in a pipeline this is moot
 # data "external" "my_ip" {
