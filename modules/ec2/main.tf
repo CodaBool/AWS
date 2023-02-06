@@ -1,5 +1,5 @@
 resource "aws_spot_instance_request" "main" {
-  ami                  = var.ami ? var.ami : data.aws_ami.image.id
+  ami                  = data.aws_ami.image.id
   # ami                  = "ami-03a45a5ac837f33b7" # ami-084237e82d7842286
   spot_price           = "0.002400" # max price to request, use aws ec2 describe-spot-price-history
   wait_for_fulfillment = true     # wait up to 10min 
@@ -14,9 +14,10 @@ resource "aws_spot_instance_request" "main" {
 data "aws_ami" "image" {
   most_recent = true
   owners = ["self"]
-  filter {                       
-    name = "tag:Application"     
-    values = ["my-app-name"]
+
+  filter {
+    name   = "name"
+    values = [var.ami_name]
   }
 }
 # resource "aws_key_pair" "main" {
