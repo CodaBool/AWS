@@ -4,7 +4,7 @@ variable "name" {
 
 variable "key_name" {
   type    = string
-  default = "win.pem"
+  default = "win"
 }
 
 variable "ami_name" {
