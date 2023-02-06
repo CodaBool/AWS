@@ -7,6 +7,11 @@ variable "key_name" {
   default = "win"
 }
 
+variable "profile_name" {
+  type    = string
+  default = "ec2_profile"
+}
+
 variable "instance_type" {
   type    = string
   default = "t4g.nano"
