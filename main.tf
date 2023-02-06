@@ -40,6 +40,10 @@ module "s3" {
   source = "./modules/s3"
 }
 
+module "cloudwatch" {
+  source = "./modules/cloudwatch"
+}
+
 resource "aws_ssm_parameter" "all_env" {
   name        = "/env"
   description = "A comma seperated list of all aws envs"
