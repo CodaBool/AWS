@@ -53,19 +53,22 @@ export async function handler(event, context) {
 
     if (event["Records"] !== undefined) {
       event.body = event["Records"][0].body
-      // console.log('body', event.body)
       event.path = event.body.split('@')[0]
       creationKey = event.body.split('@')[1]
-      if (creationKey === process.env.KEY) {
-        console.log('Triggered from SQS with an authorized write request')
+      if (process.env.KEY) {
+        if (creationKey === process.env.KEY) {
+          console.log('Triggered from SQS with an authorized write request')
+        }
       }
     } else {
       console.log('Trigger from outside SQS')
       creationKey = event.queryStringParameters?.key
-      limit = event.queryStringParameters?.limit
+      if (event.queryStringParameters?.limit) {
+        limit = event.queryStringParameters?.limit
+      }
     }
 
-    console.log('query', event.queryStringParameters)
+    // console.log('query', event.queryStringParameters)
     console.log('path', event.path)
     console.log('limit', limit)
     // console.log('body', event.body)
@@ -73,33 +76,33 @@ export async function handler(event, context) {
     if (creationKey) { // write
       if (creationKey !== process.env.KEY) throw 'Wrong key'
 
-      if (event.path === '/v1/trending_github') {
+      if (event.path === '/v1/github') {
         if (!process.env.GIT_TOKEN) throw 'undefined GIT_TOKEN env var'
         response.body = await githubTrends()
       } else if (event.path === '/v1/upcoming_movies') {
         response.body = await getUpComingMovies()
       } else if (event.path === '/v1/trending_movies') {
         response.body = await getTrendingMovie()
-      } else if (event.path === '/v1/trending_tv') {
+      } else if (event.path === '/v1/tv') {
         response.body = await getTrendingTV()
-      } else if (event.path === '/v1/trending_games') {
+      } else if (event.path === '/v1/games') {
         response.body = await trendingGames()
-      } else if (event.path === '/v1/trending_npm') {
+      } else if (event.path === '/v1/npm') {
         response.body = await getNpmTrend()
-      } else if (event.path === '/v1/trending_pypi') {
+      } else if (event.path === '/v1/pypi') {
         response.body = await getPyTrend()
       } else if (event.path === '/v1/get_build') {
         response.body = process.env.BUILD_ID
       } else {
         throw `BUILD: ${process.env.BUILD_ID} |
   Use one of the following api paths:
-  /trending_github
-  /upcoming_movies
-  /trending_movies
-  /trending_tv
-  /trending_games
-  /trending_npm
-  /trending_pypi`
+  /v1/github
+  /v1/upcoming_movies
+  /v1/trending_movies
+  /v1/tv
+  /v1/games
+  /v1/npm
+  /v1/pypi`
       }
   
       if (response.body && (event.path !== '/v1/get_build')) { // write
@@ -108,9 +111,9 @@ export async function handler(event, context) {
         let { deleteSQL, insertSQL } = generateSQL(event.path, response.body)
         console.log('SQL DUMP', deleteSQL)
         await db.query(deleteSQL)
-        console.log('insert sql', insertSQL)
+        // console.log('insert sql characters', insertSQL)
         const res = await db.query(insertSQL).then(res => res.rowCount)
-        console.log('db query res', res)
+        console.log('inserted', res, 'rows')
       }
     } else { // read
       console.log('read request')
@@ -119,15 +122,15 @@ export async function handler(event, context) {
       console.log('read sql =', readSQL)
       if (!readSQL) throw `BUILD: ${process.env.BUILD_ID} |
 Use one of the following api paths:
-/trending_github
-/upcoming_movies
-/trending_movies
-/trending_tv
-/trending_games
-/trending_npm
-/trending_pypi`
+/v1/github
+/v1/upcoming_movies
+/v1/trending_movies
+/v1/tv
+/v1/games
+/v1/npm
+/v1/pypi`
       response.body = await db.query(readSQL).then(res => res.rows)
-      console.log('rows', response.body)
+      console.log('rows', response.body.length)
     }
     response.body = JSON.stringify(response.body, null, 2)
   } catch (err) {
@@ -146,7 +149,8 @@ Use one of the following api paths:
 if (!DOCKER) handler({
   path: "/v1/upcoming_movies",
   queryStringParameters: {
-    limit: 25
+    // limit: 25,
+    key: process.env.KEY
   }
 })
 
@@ -165,11 +169,11 @@ function generateSQL(path, data, isRead, limit) {
   let insertSQL = null
   let readSQL = null
   // TODO: limit should be set to high number and given to the format method for read
-  if (path === '/v1/trending_github') {
+  if (path === '/v1/github') {
     deleteSQL = 'DELETE FROM trending_github'
     insertSQL = 'trending_github(name, href, description, stars)'
     readSQL = `SELECT * FROM trending_github${limit ? ` LIMIT ${limit}` : ''}`
-  } else if (path === '/v1/trending_npm') {
+  } else if (path === '/v1/npm') {
     deleteSQL = 'DELETE FROM trending_npm'
     insertSQL = 'trending_npm(subject, page, rank, title, description)'
     readSQL = 'SELECT * FROM trending_npm ORDER BY subject, rank'
@@ -177,15 +181,15 @@ function generateSQL(path, data, isRead, limit) {
     deleteSQL = 'DELETE FROM trending_movies'
     insertSQL = 'trending_movies(link, img, title, year, rank, velocity, rating)'
     readSQL = `SELECT * FROM trending_movies${limit ? ` LIMIT ${limit}` : ''}`
-  } else if (path === '/v1/trending_pypi') {
+  } else if (path === '/v1/pypi') {
     deleteSQL = 'DELETE FROM trending_pypi'
     insertSQL = 'trending_pypi(name, description, downloads)'
     readSQL = `SELECT * FROM trending_pypi${limit ? ` LIMIT ${limit}` : ''}`
-  } else if (path === '/v1/trending_tv') {
+  } else if (path === '/v1/tv') {
     deleteSQL = 'DELETE FROM trending_tv'
     insertSQL = 'trending_tv(link, img, title, rank, velocity, rating)'
     readSQL = `SELECT * FROM trending_tv${limit ? ` LIMIT ${limit}` : ''}`
-  } else if (path === '/v1/trending_games') {
+  } else if (path === '/v1/games') {
     deleteSQL = 'DELETE FROM trending_games'
     insertSQL = 'trending_games(link, title, rating, is_free, regular_price, discounted_price)'
     readSQL = `SELECT * FROM trending_games${limit ? ` LIMIT ${limit}` : ''}`
@@ -240,9 +244,15 @@ async function githubTrends() {
 
 async function getUpComingMovies() {
   // IMDB will give 403 to prevent scraping unless a User-Agent is spoofed
+  // user agent needs to be latest, for this reason I first scrape a site which lists the latest version
   // seems to assume us and movie
+
+  // 2023 update, it has some kind of runtime error here, but only in AWS.
+  // not sure what is going on.
+
+  const hardcodeAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0'
   const html = await axios.get('https://www.imdb.com/calendar/?region=US&type=MOVIE', {
-    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0' }
+    headers: { 'User-Agent': hardcodeAgent }
   })
     .then(res => res.data)
     .catch(err => console.log('bad request', err))
@@ -296,7 +306,7 @@ async function getTrendingTV() {
         show.rating = node.textContent.trim()
       }
     }
-    console.log('+', show)
+    // console.log('+', show)
     data.push(show)
   }
   return data
@@ -338,7 +348,7 @@ async function getTrendingMovie() {
         movie.rating = node.textContent.trim()
       }
     }
-    console.log('+', movie)
+    // console.log('+', movie)
     data.push(movie)
   }
   return data

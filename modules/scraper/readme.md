@@ -43,3 +43,8 @@ Building docker containers between changes can be time consuming. For this reaso
 
 
 </details>
+
+
+# 🐛 Bugs
+- I keep getting psql errors but I switch from the the pool port and back and it works 🤷
+- upcoming_movies scrape runs into runtime error but only when ran inside AWS 🤷
