@@ -1,0 +1,26 @@
+build:
+	docker build -t hibernate:latest .
+
+run: build
+	# Make sure you ran awsume for your account
+	docker run \
+	-e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+	-e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+	-e AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-''} \
+	-e AWS_REGION='us-east-1' \
+	-p 9000:8080 \
+	--rm \
+	--name hibernate \
+	hibernate:latest
+
+start:
+  curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d '{"start": true}'
+
+stop:
+  curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d '{"start": false}'
+
+clean:
+	docker rm hibernate
+
+invoke:
+  aws lambda invoke --function-name hibernate --cli-binary-format raw-in-base64-out --payload '{}' /dev/null

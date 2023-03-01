@@ -23,6 +23,10 @@ module "scraper" {
   source = "./modules/scraper"
 }
 
+module "hibernate" {
+  source = "./modules/hibernate"
+}
+
 # module "cheapo" {
 #   source = "./modules/ec2"
 # }
