@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -52,7 +51,7 @@ func main() {
 	prod := os.Getenv("AWS_LAMBDA_FUNCTION_NAME")
 	if prod == "" {
 		buildLogger(false)
-		handle(nil, Input{Start: true})
+		handle(nil, Input{Start: false})
 	} else {
 		buildLogger(true)
 		lambda.Start(handle)
@@ -66,42 +65,39 @@ func handle(ctx context.Context, input Input) (string, error) {
 	res, err := clientEC2.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{})
 	check(err)
 	ids := make([]string, 0)
+	// amiIDs := make([]string, 0)
 	for _, instance := range res.Reservations[0].Instances {
+		// amiIDs = append(amiIDs, *instance.ImageId)
 		ids = append(ids, *instance.InstanceId)
 	}
 
 	plural_inst := ""
 	if len(ids) == 1 {
-		plural_inst = " instance"
+		plural_inst = "1 instance"
 	} else {
-		plural_inst = " instances"
+		plural_inst = fmt.Sprintf("%v", len(ids)) + " instances"
 	}
 
 	subject := ""
-	log.Print(input.Start)
 	if input.Start {
-		subject = "Started " + fmt.Sprintf("%v", len(ids)) + plural_inst
-		log.Print("starting ", ids)
+		subject = "Started " + plural_inst
 		_, err = clientEC2.StartInstances(context.TODO(), &ec2.StartInstancesInput{
 			InstanceIds: ids,
 		})
 		check(err)
 	} else {
-		subject = "Stopped " + fmt.Sprintf("%v", len(ids)) + plural_inst
-		log.Print("stopping ", ids)
-		for _, instance := range res.Reservations[0].Instances {
-			ids = append(ids, *instance.InstanceId)
-		}
+		subject = "Stopped " + plural_inst
 		_, err = clientEC2.StopInstances(context.TODO(), &ec2.StopInstancesInput{
 			InstanceIds: ids,
 		})
 		check(err)
 	}
+	log.Print(subject)
 
-	message := strings.Join(ids[:], ", ")
+	// message := strings.Join(ids[:], ", ")
 	clientSNS := sns.NewFromConfig(cfg)
 	_, err = clientSNS.Publish(context.TODO(), &sns.PublishInput{
-		Message:  aws.String(message),
+		Message:  aws.String(subject),
 		Subject:  aws.String(subject),
 		TopicArn: aws.String("arn:aws:sns:us-east-1:919759177803:notify"),
 	})

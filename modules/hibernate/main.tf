@@ -6,8 +6,8 @@ module "lambda" {
   log_retention        = 60
   description          = "Automated starting and stopping EC2 to save on costs"
   run_on_schedule      = true 
-  interval             = "cron(0 19 * * ? *)" # Every day at 1am
-  event_input          = jsonencode({ start = false })
+  interval             = "cron(0 17 * * ? *)" # Every day at 12pm
+  event_input          = jsonencode({ start = true })
 }
 
 resource "aws_iam_role_policy_attachment" "ec2_full_access" {
@@ -30,12 +30,12 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
 
 resource "aws_cloudwatch_event_rule" "event_rule" {
   name_prefix         = "scheduled-${module.lambda.function.function_name}"
-  schedule_expression = "cron(0 7 * * ? *)" # Every day at 12pm
+  schedule_expression = "cron(0 5 * * ? *)" # Every day at 12am
   description         = "Invoke the ${module.lambda.function.function_name} Lambda function"
 }
 
 resource "aws_cloudwatch_event_target" "lambda" {
   rule  = aws_cloudwatch_event_rule.event_rule.id
   arn   = module.lambda.function.arn
-  input = jsonencode({ start = true })
+  input = jsonencode({ start = false })
 }
