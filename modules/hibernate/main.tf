@@ -3,7 +3,7 @@ module "lambda" {
   name                 = "hibernate"
   path_to_dockerfile   = path.module
   tag                  = "latest"
-  log_retention        = 60
+  # log_retention        = 60
   description          = "Automated starting and stopping EC2 to save on costs"
   run_on_schedule      = true 
   interval             = "cron(0 17 * * ? *)" # Every day at 12pm

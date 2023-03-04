@@ -82,13 +82,14 @@ resource "aws_ecr_lifecycle_policy" "remove_old_images" {
   policy = jsonencode({
     rules = [{
       rulePriority = 1
-      description = "Delete untagged images past the latest 1 untagged"
+      description = "Delete untagged images"
       action = { 
         type = "expire" 
       }
       selection = {
         tagStatus = "untagged"
-        countType = "imageCountMoreThan"
+        countType = "sinceImagePushed"
+        countUnit = "days"
         countNumber = 1
       }
     }]

@@ -14,7 +14,7 @@ module "lambda" {
   name                 = var.name
   path_to_dockerfile   = path.module
   tag                  = var.tag
-  log_retention        = 60
+  # log_retention        = 60
   description          = "Capable of sending emails or texts"
   # this could easily be the method of update instead of crontab but I have the crontab built
   # and having this on schedule would mean having an `update-all` with a `promises.allSettled`
