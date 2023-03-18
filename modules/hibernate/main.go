@@ -6,10 +6,8 @@ import (
 	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -95,13 +93,13 @@ func handle(ctx context.Context, input Input) (string, error) {
 	log.Print(subject)
 
 	// message := strings.Join(ids[:], ", ")
-	clientSNS := sns.NewFromConfig(cfg)
-	_, err = clientSNS.Publish(context.TODO(), &sns.PublishInput{
-		Message:  aws.String(subject),
-		Subject:  aws.String(subject),
-		TopicArn: aws.String("arn:aws:sns:us-east-1:919759177803:notify"),
-	})
-	check(err)
+	// clientSNS := sns.NewFromConfig(cfg)
+	// _, err = clientSNS.Publish(context.TODO(), &sns.PublishInput{
+	// 	Message:  aws.String(subject),
+	// 	Subject:  aws.String(subject),
+	// 	TopicArn: aws.String("arn:aws:sns:us-east-1:919759177803:notify"),
+	// })
+	// check(err)
 
 	return subject, nil
 }

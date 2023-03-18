@@ -8,31 +8,15 @@ dotenv.config()
 
 const { JSDOM } = jsdom
 
-const DOCKER = process.env.AWS_LAMBDA_FUNCTION_NAME
-
 export async function handler(event, context) {
-  const cfg = {}
-  process.argv.indexOf('-t') > -1 ? cfg['test'] = true : cfg['test'] = false
-
-  const argIndex = process.argv.indexOf('--path')
-  if (argIndex > -1) {
-    console.log('set path to', process.argv[argIndex + 1])
-    event['pathParameters']['id'] = process.argv[argIndex + 1]
-  }
-
-  if (DOCKER) {
-    if (DOCKER == 'test_function') { 
-      // local docker
-      event = {
-        path: "/v1/upcoming_movies",
-        queryStringParameters: {
-          limit: 25
-        }
-      }
-    } else { 
-      // cloud docker
-    }
-  }
+  // flags
+  // const cfg = {}
+  // process.argv.indexOf('-t') > -1 ? cfg['test'] = true : cfg['test'] = false
+  // const argIndex = process.argv.indexOf('--path')
+  // if (argIndex > -1) {
+  //   console.log('set path to', process.argv[argIndex + 1])
+  //   event['pathParameters']['id'] = process.argv[argIndex + 1]
+  // }
 
   let response = { 
     statusCode: 200, 
@@ -61,8 +45,8 @@ export async function handler(event, context) {
         }
       }
     } else {
-      console.log('Trigger from outside SQS')
       creationKey = event.queryStringParameters?.key
+      console.log('Local instance', creationKey ? 'write': 'read')
       if (event.queryStringParameters?.limit) {
         limit = event.queryStringParameters?.limit
       }
@@ -70,7 +54,7 @@ export async function handler(event, context) {
 
     // console.log('query', event.queryStringParameters)
     console.log('path', event.path)
-    console.log('limit', limit)
+    // console.log('limit', limit)
     // console.log('body', event.body)
 
     if (creationKey) { // write
@@ -145,14 +129,6 @@ Use one of the following api paths:
     return response
   }
 }
-
-if (!DOCKER) handler({
-  path: "/v1/upcoming_movies",
-  queryStringParameters: {
-    // limit: 25,
-    key: process.env.KEY
-  }
-})
 
 function toArr(rawData) {
   return rawData.map(obj => {
