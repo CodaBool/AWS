@@ -9,15 +9,6 @@ dotenv.config()
 const { JSDOM } = jsdom
 
 export async function handler(event, context) {
-  // flags
-  // const cfg = {}
-  // process.argv.indexOf('-t') > -1 ? cfg['test'] = true : cfg['test'] = false
-  // const argIndex = process.argv.indexOf('--path')
-  // if (argIndex > -1) {
-  //   console.log('set path to', process.argv[argIndex + 1])
-  //   event['pathParameters']['id'] = process.argv[argIndex + 1]
-  // }
-
   let response = { 
     statusCode: 200, 
     body: 'default',
@@ -52,10 +43,7 @@ export async function handler(event, context) {
       }
     }
 
-    // console.log('query', event.queryStringParameters)
     console.log('path', event.path)
-    // console.log('limit', limit)
-    // console.log('body', event.body)
 
     if (creationKey) { // write
       if (creationKey !== process.env.KEY) throw 'Wrong key'
@@ -189,32 +177,42 @@ function generateSQL(path, data, isRead, limit) {
 }
 
 async function githubTrends() {
-  const LANGUAGES = ["JavaScript", "Python", "Shell"]
-  const TOKEN = process.env.GIT_TOKEN;
-  const allData = await axios.get('https://api.github.com/search/repositories?q=stars:>0&sort=stars&per_page=100', 
-      { Headers: { Authorization: TOKEN } })
+  // const LANGUAGES = ["JavaScript", "Python", "Shell"]
+  // const TOKEN = process.env.GIT_TOKEN
+  const allData = await axios.get('https://api.github.com/search/repositories?q=stars:%3E1&sort=stars&order=desc&per_page=100')
     .then(res => res.data)
     .catch(console.log)
-  for (const language of LANGUAGES) {
-    const langData = await axios.get(`https://api.github.com/search/repositories?q=language:${language}&stars:>0&sort=stars&per_page=100`, 
-        { Headers: { Authorization: TOKEN } })
-      .then(res => res.data)
-      .catch(console.log)
-    const relevantLangData = langData.items.map(repo => ({
-      name: repo.name,
-      href: repo.html_url,
-      description: repo.description?.substring(0, 300) || '',
-      stars: repo.stargazers_count,
-      language
-    }))
-    console.log(relevantLangData)
-  }
+  // for (const language of LANGUAGES) {
+  //   console.log('---> ', language)
+  //   const langData = await axios.get(`https://api.github.com/search/repositories?q=language:${language}&stars:>0&sort=stars&per_page=100`, 
+  //       { Headers: { Authorization: TOKEN } })
+  //     .then(res => res.data)
+  //     .catch(console.log)
+  //   langData.items.map(repo => {
+  //     // console.log(repo.name)
+  //     // name: repo.name,
+  //     // href: repo.html_url,
+  //     // description: repo.description?.substring(0, 300) || '',
+  //     // stars: repo.stargazers_count,
+  //     // language
+  //   })
+  //   const relevantLangData = langData.items.map(repo => ({
+  //     name: repo.name,
+  //     href: repo.html_url,
+  //     description: repo.description?.substring(0, 300) || '',
+  //     stars: repo.stargazers_count,
+  //     language
+  //   }))
+  //   // console.log(relevantLangData)
+  // }
+
   const relevantAllData = allData.items.map(repo => ({
     name: repo.name,
     href: repo.html_url,
     description: repo.description.substring(0, 300),
     stars: repo.stargazers_count
   }))
+  console.log('+', relevantAllData.length, 'github repos')
   return relevantAllData
 }
 
