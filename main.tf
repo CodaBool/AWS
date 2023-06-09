@@ -5,6 +5,11 @@ provider "aws" {
 
 terraform {
   required_version = ">= 1.3.6, < 2.0.0"
+  required_providers {
+    aws = {
+      version = "< 5.0"
+    }
+  }
   backend "s3" {
     bucket = "codabool-tf"
     key    = "shared.tfstate"

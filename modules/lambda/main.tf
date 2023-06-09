@@ -56,6 +56,7 @@ resource "aws_lambda_function" "main" {
   timeout          = 900
   image_uri        = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/${var.name}:latest"
   source_code_hash = split("sha256:", data.aws_ecr_image.lambda.id)[1]
+  # source_code_hash = filemd5("../dist/${each.value}")
   environment {
     variables = var.environment
   }

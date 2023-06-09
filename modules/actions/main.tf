@@ -10,6 +10,7 @@ resource "aws_iam_openid_connect_provider" "default" {
   thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
 }
 
+# for some reason terraform thinks this is invalid policy but it's an exact match with what is in the account 🤷
 resource "aws_iam_role" "actions" {
   name        = "gh-action-assume"
   description = "Role to assume to create the infrastructure."
@@ -25,7 +26,10 @@ resource "aws_iam_role" "actions" {
         Condition = {
           StringLike = {
             "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-            "token.actions.githubusercontent.com:sub": "repo:${var.github_repository}:*"
+            "token.actions.githubusercontent.com:sub": [
+              "repo:CodaBool/*",
+              "repo:TampaDevs/bayhacks.dev:*"
+            ]
           }
         }
       }
