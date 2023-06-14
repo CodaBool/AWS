@@ -26,6 +26,11 @@ variable "name" {
   type = string
 }
 
+variable "memory" {
+  type = number
+  default = 512
+}
+
 variable "event_input" {
   default = ""
   type    = string

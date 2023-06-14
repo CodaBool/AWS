@@ -53,7 +53,7 @@ resource "aws_lambda_function" "main" {
   role             = aws_iam_role.lambda_assume.arn
   package_type     = "Image"
   description      = var.description
-  memory_size      = 512
+  memory_size      = var.memory
   timeout          = 900
   image_uri        = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/${var.name}:latest"
   source_code_hash = split("sha256:", data.aws_ecr_image.lambda.id)[1]
