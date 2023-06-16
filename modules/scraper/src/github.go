@@ -32,6 +32,8 @@ func scrapeGithub() {
 				repo.Name = strings.ToLower(val.String())
 			} else if key.String() == "stargazers_count" {
 				repo.Stars = val.Int()
+			} else if key.String() == "description" {
+				repo.Description = val.String()
 			}
 			return true
 		})

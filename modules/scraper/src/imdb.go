@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gocolly/colly"
 )
@@ -16,9 +17,10 @@ func scrapeUpcomingMovies() {
 		e.ForEach("ul", func(_ int, e *colly.HTMLElement) {
 			e.ForEach("a", func(_ int, el *colly.HTMLElement) {
 				if el.Text != "" {
-					// log.Print("+ ", el.Text[:len(el.Text)-7])
+					releaseTime, err := time.Parse("Jan 2, 2006", release)
+					check(err)
 					data = append(data, UpcomingMovie{
-						Release: release,
+						Release: releaseTime,
 						Title:   el.Text[:len(el.Text)-7],
 					})
 				}
@@ -40,13 +42,14 @@ func scrapeTV() {
 		e.ForEach("tr", func(i int, e *colly.HTMLElement) {
 			e.ForEach("a", func(_ int, el *colly.HTMLElement) {
 				if strings.TrimSpace(el.Text) != "" {
-					sign := ""
+					sign := "+"
 					if e.DOM.Find(".down").Length() == 1 {
 						sign = "-"
 					}
 					vel := strings.ReplaceAll(e.DOM.Find(".velocity").Text(), "\n", "")
 					vel = strings.Split(vel, "(")[1]
 					if vel == "no change)" {
+						sign = ""
 						vel = "0)"
 					}
 					data = append(data, TrendingTV{
@@ -75,13 +78,14 @@ func scrapeTrendingMovies() {
 			var tempData TrendingMovie
 			el.ForEach("td", func(i int, ele *colly.HTMLElement) {
 				if i == 1 {
-					sign := ""
+					sign := "+"
 					if ele.DOM.Find(".down").Length() == 1 {
 						sign = "-"
 					}
 					vel := strings.ReplaceAll(ele.DOM.Find(".velocity").Text(), "\n", "")
 					vel = strings.Split(vel, "(")[1]
 					if vel == "no change)" {
+						sign = ""
 						vel = "0)"
 					}
 					tempData.Velocity = sign + vel[:len(vel)-1]

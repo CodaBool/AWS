@@ -21,7 +21,6 @@ type TrendingGo struct {
 
 type TrendingGithub struct {
 	Name        string
-	Href        string
 	FullName    string
 	Stars       int64
 	Description string
@@ -30,8 +29,7 @@ type TrendingGithub struct {
 
 type UpcomingMovie struct {
 	Title     string
-	Release   string
-	Img       string
+	Release   time.Time
 	UpdatedAt time.Time
 }
 
@@ -44,8 +42,6 @@ type TrendingMovie struct {
 }
 
 type TrendingTV struct {
-	Link      string
-	Img       string
 	Title     string
 	Rank      int
 	Velocity  string

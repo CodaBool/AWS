@@ -28,7 +28,10 @@ func scrapeGames() {
 					percent := strings.TrimSpace(e.DOM.Find(".search_discount").Text())
 					price = "$" + priceSlice[2] + " (" + percent + " off)"
 				}
-				// log.Print(title, " ", price)
+				log.Print(priceSlice)
+				if strings.ToLower(priceSlice[0]) == "free to play" {
+					price = "Free"
+				}
 				data = append(data, TrendingGame{
 					Title: title,
 					Price: price,

@@ -32,12 +32,14 @@ func scrapeJS() {
 	})
 
 	c.OnError(func(_ *colly.Response, err error) { check(err) })
-	for page := 0; page < 2; page++ {
-		for _, subject := range []string{"backend", "front-end", "cli", "framework"} {
-			log.Print("page ", page, ", ", subject)
-			c.Visit("https://www.npmjs.com/search?ranking=popularity&page=" + strconv.Itoa(page) + "&q=keywords%3A" + subject)
-		}
+	// for page := 0; page < 2; page++ {
+	for _, subject := range []string{"backend", "front-end", "cli", "framework"} {
+		// log.Print("page ", page, ", ", subject)s
+		log.Print(subject)
+		// c.Visit("https://www.npmjs.com/search?ranking=popularity&page=" + strconv.Itoa(page) + "&q=keywords%3A" + subject)
+		c.Visit("https://www.npmjs.com/search?ranking=popularity&page=0&q=keywords%3A" + subject)
 	}
+	// }
 	c.Wait()
 	db.Exec("DELETE FROM trending_js")
 	log.Info().Msg(fmt.Sprintf("+%d js", len(data)))
