@@ -28,6 +28,10 @@ module "scraper" {
   source = "./modules/scraper"
 }
 
+module "discord" {
+  source = "./modules/discord"
+}
+
 module "hibernate" {
   source = "./modules/hibernate"
 }

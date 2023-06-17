@@ -37,5 +37,5 @@ resource "aws_iam_role_policy_attachment" "sns_publish" {
 }
 
 locals {
-  env = { for tuple in regexall("(.*)=(.*)", file("${path.module}/.env")) : tuple[0] => tuple[1] }
+  env = { for tuple in regexall("(.*?)=(.*)", file("${path.module}/.env")) : tuple[0] => sensitive(tuple[1]) }
 }

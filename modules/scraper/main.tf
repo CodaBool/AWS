@@ -21,5 +21,5 @@ module "lambda" {
 }
 
 locals {
-  env = { for tuple in regexall("(.*)=(.*)", file("${path.module}/src/.env")) : tuple[0] => tuple[1] }
+  env = { for tuple in regexall("(.*?)=(.*)", file("${path.module}/src/.env")) : tuple[0] => sensitive(tuple[1]) }
 }
