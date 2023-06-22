@@ -1,5 +1,5 @@
 build:
-  docker build -t discord .
+  docker build -t emailer .
 
 run: build
   docker run \
@@ -9,14 +9,11 @@ run: build
   -e AWS_LAMBDA_FUNCTION_TIMEOUT=900 \
   --env-file ./.env \
   -p 9000:8080 \
-  --rm --name discord \
-  discord
+  --rm --name emailer \
+  emailer
 
 upload:
   aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 919759177803.dkr.ecr.us-east-1.amazonaws.com
-  docker build -t discord .
-  docker tag discord:latest 919759177803.dkr.ecr.us-east-1.amazonaws.com/discord:latest
-  docker push 919759177803.dkr.ecr.us-east-1.amazonaws.com/discord:latest
-  
-test:
-  curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d "{}"
+  docker build -t emailer .
+  docker tag emailer:latest 919759177803.dkr.ecr.us-east-1.amazonaws.com/emailer:latest
+  docker push 919759177803.dkr.ecr.us-east-1.amazonaws.com/emailer:latest

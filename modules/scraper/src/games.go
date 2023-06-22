@@ -11,6 +11,7 @@ import (
 var nonAlphanumericRegex = regexp.MustCompile(`[^a-zA-Z0-9 ]+`)
 
 func scrapeGames() {
+	log := logger.With().Str("func", "scrapeGames").Logger()
 	defer wg.Done()
 	var data []TrendingGame
 	c := colly.NewCollector()
@@ -39,7 +40,7 @@ func scrapeGames() {
 			}
 		})
 	})
-	c.OnError(func(_ *colly.Response, err error) { check(err) })
+	c.OnError(func(_ *colly.Response, err error) { check(err, log) })
 	c.Visit("https://store.steampowered.com/search/?filter=topsellers")
 	db.Exec("DELETE FROM trending_games")
 	log.Info().Msg(fmt.Sprintf("+%d games", len(data)))

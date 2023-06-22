@@ -37,9 +37,7 @@ resource "aws_iam_policy" "retention" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = [
-        "logs:PutRetentionPolicy"
-      ]
+      Action = "logs:PutRetentionPolicy"
       Effect   = "Allow"
       Resource = "*"
     }]

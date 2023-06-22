@@ -4,10 +4,10 @@ provider "aws" {
 }
 
 terraform {
-  required_version = ">= 1.3.6, < 2.0.0"
+  required_version = ">= 1.4.6, < 2.0.0"
   required_providers {
     aws = {
-      version = "< 5.0"
+      version = "< 6.0"
     }
   }
   backend "s3" {
@@ -17,28 +17,27 @@ terraform {
   }
 }
 
-# module "emailer" {
-#   source = "./modules/emailer"
-# }
-module "texter" {
-  source = "./modules/texter"
+data "aws_caller_identity" "current" {}
+
+module "lambda_emailer" {
+  source = "./modules/emailer"
+  account = data.aws_caller_identity.current.account_id
 }
 
-module "scraper" {
+module "lambda_scraper" {
   source = "./modules/scraper"
+  account = data.aws_caller_identity.current.account_id
 }
 
-module "discord" {
+module "lambda_discord" {
   source = "./modules/discord"
+  account = data.aws_caller_identity.current.account_id
 }
 
-module "hibernate" {
+module "lambda_hibernate" {
   source = "./modules/hibernate"
+  account = data.aws_caller_identity.current.account_id
 }
-
-# module "cheapo" {
-#   source = "./modules/ec2"
-# }
 
 module "key" {
   source = "./modules/key"
@@ -47,15 +46,12 @@ module "key" {
 
 module "actions" {
   source = "./modules/actions"
+  account = data.aws_caller_identity.current.account_id
 }
 
-module "s3" {
-  source = "./modules/s3"
-}
-
-module "cloudwatch" {
-  source = "./modules/cloudwatch"
-}
+# module "cloudwatch" {
+#   source = "./modules/cloudwatch"
+# }
 
 resource "aws_ssm_parameter" "all_env" {
   name        = "/env"

@@ -9,6 +9,8 @@ import (
 )
 
 func scrapeUpcomingMovies() {
+	log := logger.With().Str("func", "scrapeUpcomingMovies").Logger()
+
 	defer wg.Done()
 	var data []UpcomingMovie
 	c := colly.NewCollector()
@@ -18,7 +20,7 @@ func scrapeUpcomingMovies() {
 			e.ForEach("a", func(_ int, el *colly.HTMLElement) {
 				if el.Text != "" {
 					releaseTime, err := time.Parse("Jan 2, 2006", release)
-					check(err)
+					check(err, log)
 					data = append(data, UpcomingMovie{
 						Release: releaseTime,
 						Title:   el.Text[:len(el.Text)-7],
@@ -27,7 +29,7 @@ func scrapeUpcomingMovies() {
 			})
 		})
 	})
-	c.OnError(func(_ *colly.Response, err error) { check(err) })
+	c.OnError(func(_ *colly.Response, err error) { check(err, log) })
 	c.Visit("https://www.imdb.com/calendar/?region=US&type=MOVIE")
 	db.Exec("DELETE FROM upcoming_movies")
 	log.Info().Msg(fmt.Sprintf("+%d upcoming movies", len(data)))
@@ -35,6 +37,8 @@ func scrapeUpcomingMovies() {
 }
 
 func scrapeTV() {
+	log := logger.With().Str("func", "scrapeTV").Logger()
+
 	defer wg.Done()
 	var data []TrendingTV
 	c := colly.NewCollector()
@@ -62,7 +66,7 @@ func scrapeTV() {
 			})
 		})
 	})
-	c.OnError(func(_ *colly.Response, err error) { check(err) })
+	c.OnError(func(_ *colly.Response, err error) { check(err, log) })
 	c.Visit("https://www.imdb.com/chart/tvmeter")
 	db.Exec("DELETE FROM trending_tvs")
 	log.Info().Msg(fmt.Sprintf("+%d tv", len(data)))
@@ -70,6 +74,7 @@ func scrapeTV() {
 }
 
 func scrapeTrendingMovies() {
+	log := logger.With().Str("func", "scrapeTrendingMovies").Logger()
 	defer wg.Done()
 	var data []TrendingMovie
 	c := colly.NewCollector()
@@ -98,7 +103,7 @@ func scrapeTrendingMovies() {
 			data = append(data, tempData)
 		})
 	})
-	c.OnError(func(_ *colly.Response, err error) { check(err) })
+	c.OnError(func(_ *colly.Response, err error) { check(err, log) })
 	c.Visit("https://www.imdb.com/chart/moviemeter")
 	db.Exec("DELETE FROM trending_movies")
 	log.Info().Msg(fmt.Sprintf("+%d trending movies", len(data)))

@@ -12,18 +12,20 @@ import (
 )
 
 func scrapeGithub() {
+	log := logger.With().Str("func", "scrapeGithub").Logger()
+
 	defer wg.Done()
 	var data []TrendingGithub
 	client := &http.Client{Timeout: 9 * time.Second}
 
 	req, err := http.NewRequest(http.MethodGet, "https://api.github.com/search/repositories?q=stars:%3E1&sort=stars&order=desc&per_page=100", nil)
-	check(err)
+	check(err, log)
 	req.Header.Add("Authorization", os.Getenv("GIT_TOKEN"))
 	res, err := client.Do(req)
-	check(err)
+	check(err, log)
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
-	check(err)
+	check(err, log)
 
 	gjson.GetBytes(body, "items").ForEach(func(_, item gjson.Result) bool {
 		var repo TrendingGithub

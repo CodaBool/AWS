@@ -13,16 +13,18 @@ import (
 )
 
 func scrapePY(skipDesc bool) {
+	log := logger.With().Str("func", "scrapePY").Logger()
+
 	defer wg.Done()
 	var data []TrendingPY
 	client := &http.Client{Timeout: 15 * time.Second}
 	req, err := http.NewRequest(http.MethodGet, "https://hugovk.github.io/top-pypi-packages/top-pypi-packages-30-days.min.json", nil)
-	check(err)
+	check(err, log)
 	res, err := client.Do(req)
-	check(err)
+	check(err, log)
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
-	check(err)
+	check(err, log)
 
 	gjson.GetBytes(body, "rows").ForEach(func(index gjson.Result, item gjson.Result) bool {
 		if index.Int() == 100 {
@@ -52,6 +54,7 @@ func scrapePY(skipDesc bool) {
 }
 
 func scrapeSummary(packages []TrendingPY) {
+	log := logger.With().Str("func", "scrapeSummary").Logger()
 	c := colly.NewCollector()
 	var newData []TrendingPY
 	c.WithTransport(&http.Transport{
@@ -79,9 +82,7 @@ func scrapeSummary(packages []TrendingPY) {
 		}
 	})
 	c.OnError(func(r *colly.Response, err error) {
-		if err != nil {
-			log.Warn().Err(err).Msg("")
-		}
+		check(err, log)
 	})
 	for _, p := range packages {
 		c.Visit("https://www.pypistats.org/packages/" + p.Name)

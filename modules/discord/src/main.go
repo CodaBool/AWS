@@ -21,11 +21,10 @@ import (
 var dg *discordgo.Session
 
 func main() {
+	buildLogger()
 	if os.Getenv("AWS_LAMBDA_FUNCTION_NAME") == "" {
-		buildLogger(false)
-		handle(nil, nil)
+		handle(context.TODO(), nil)
 	} else {
-		buildLogger(true)
 		lambda.Start(handle)
 	}
 }
@@ -48,14 +47,18 @@ func handle(ctx context.Context, _ any) (string, error) {
 	github(db, "938973612461916169")
 	javascript(db, "938974163572518943")
 	dg.Close()
+	logger.Fatal().Msg("break")
 	return "", nil
 }
 
 func trendingMovies(db *pgxpool.Pool, channelId string) {
+	log := logger.With().Str("func", "trendingMovies").Logger()
 	var movies []*TrendingMovie
 	var scrapedAt time.Time
 	err := pg.Select(context.Background(), db, &movies, `SELECT * FROM trending_movies LIMIT 25`)
-	check(err)
+	check(err, log)
+
+	log.Print("selected rows ", len(movies))
 
 	var fields []*discordgo.MessageEmbedField
 	for _, m := range movies {
@@ -88,10 +91,13 @@ func trendingMovies(db *pgxpool.Pool, channelId string) {
 }
 
 func tv(db *pgxpool.Pool, channelId string) {
+	log := logger.With().Str("func", "tv").Logger()
 	var tvs []*TrendingTV
 	var scrapedAt time.Time
 	err := pg.Select(context.Background(), db, &tvs, `SELECT * FROM trending_tvs LIMIT 25`)
-	check(err)
+	check(err, log)
+
+	log.Print("selected rows ", len(tvs))
 
 	var fields []*discordgo.MessageEmbedField
 	for _, v := range tvs {
@@ -133,10 +139,13 @@ func GroupBy(xs []map[string]interface{}, key string) map[interface{}][]map[stri
 }
 
 func upcomingMovies(db *pgxpool.Pool, channelId string) {
+	log := logger.With().Str("func", "upcomingMovies").Logger()
 	var movies []*UpcomingMovie
 	var scrapedAt time.Time
 	err := pg.Select(context.Background(), db, &movies, `SELECT * FROM upcoming_movies LIMIT 25`)
-	check(err)
+	check(err, log)
+
+	log.Print("selected rows ", len(movies))
 
 	var newMovies []map[string]interface{}
 	for _, movie := range movies {
@@ -194,9 +203,12 @@ func upcomingMovies(db *pgxpool.Pool, channelId string) {
 }
 
 func golang(db *pgxpool.Pool, channelId string) {
+	log := logger.With().Str("func", "golang").Logger()
 	var gos []*TrendingGo
 	err := pg.Select(context.Background(), db, &gos, `SELECT * FROM trending_gos ORDER BY stars ASC LIMIT 100 OFFSET 19`)
-	check(err)
+	check(err, log)
+
+	log.Print("selected rows ", len(gos))
 
 	interfaces := make([]interface{}, len(gos))
 	for i, v := range gos {
@@ -240,9 +252,12 @@ func golang(db *pgxpool.Pool, channelId string) {
 }
 
 func python(db *pgxpool.Pool, channelId string) {
+	log := logger.With().Str("func", "python").Logger()
 	var pies []*TrendingPY
 	err := pg.Select(context.Background(), db, &pies, `SELECT * FROM trending_pies ORDER BY downloads`)
-	check(err)
+	check(err, log)
+
+	log.Print("selected rows ", len(pies))
 
 	interfaces := make([]interface{}, len(pies))
 	for i, v := range pies {
@@ -281,9 +296,14 @@ func python(db *pgxpool.Pool, channelId string) {
 }
 
 func games(db *pgxpool.Pool, channelId string) {
+	log := logger.With().Str("func", "games").Logger()
 	var gs []*TrendingGame
 	err := pg.Select(context.Background(), db, &gs, `SELECT * FROM trending_games LIMIT 16`)
-	check(err)
+	check(err, log)
+
+	log.Print("selected rows ", len(gs))
+	log.Trace().Int("rows", len(gs)).Msg("")
+	log.Warn().Int("rows", len(gs)).Msg("placeholder")
 
 	tableString := &strings.Builder{}
 	table := tablewriter.NewWriter(tableString)
@@ -308,9 +328,12 @@ func games(db *pgxpool.Pool, channelId string) {
 }
 
 func javascript(db *pgxpool.Pool, channelId string) {
+	log := logger.With().Str("func", "javascript").Logger()
 	var jss []*TrendingJS
 	err := pg.Select(context.Background(), db, &jss, `SELECT * FROM trending_js ORDER BY subject, rank`)
-	check(err)
+	check(err, log)
+
+	log.Print("selected rows ", len(jss))
 
 	interfaces := make([]interface{}, len(jss))
 	for i, v := range jss {
@@ -360,9 +383,12 @@ func ShortText(s string, i int) string {
 }
 
 func github(db *pgxpool.Pool, channelId string) {
+	log := logger.With().Str("func", "github").Logger()
 	var ghs []*TrendingGithub
 	err := pg.Select(context.Background(), db, &ghs, `SELECT * FROM trending_githubs ORDER BY stars ASC`)
-	check(err)
+	check(err, log)
+
+	log.Print("selected rows ", len(ghs))
 
 	interfaces := make([]interface{}, len(ghs))
 	for i, v := range ghs {
@@ -419,17 +445,18 @@ func reduce(arr []interface{}, chunkSize int) [][]interface{} {
 }
 
 func post(messages []string, embed *discordgo.MessageEmbed, channelId string, channelName string) {
-	log.Info().Msg("Posting " + channelName + " to Discord")
+	log := logger.With().Str("func", "post").Logger()
+	log.Info().Msg("Posting to " + channelName)
 	if os.Getenv("POST_TO_TEST") != "" {
 		channelId = "870190331554054194"
 	}
 	if embed == nil {
 		for _, msg := range messages {
 			_, err := dg.ChannelMessageSend(channelId, msg)
-			check(err)
+			check(err, log)
 		}
 	} else {
 		_, err := dg.ChannelMessageSendEmbed(channelId, embed)
-		check(err)
+		check(err, log)
 	}
 }

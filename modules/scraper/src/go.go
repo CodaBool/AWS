@@ -14,6 +14,8 @@ import (
 )
 
 func scrapeLibhunt() []TrendingGo {
+	log := logger.With().Str("func", "scrapeLibhunt").Logger()
+
 	c := colly.NewCollector(colly.Async(true))
 	// c.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
 	var libData []TrendingGo
@@ -36,7 +38,7 @@ func scrapeLibhunt() []TrendingGo {
 	})
 
 	c.OnError(func(_ *colly.Response, err error) {
-		check(err)
+		check(err, log)
 	})
 
 	for page := 1; page < 5; page++ {
@@ -47,6 +49,8 @@ func scrapeLibhunt() []TrendingGo {
 }
 
 func scrapeGo() {
+	log := logger.With().Str("func", "scrapeGo").Logger()
+
 	defer wg.Done()
 	var ghData []TrendingGo
 	client := &http.Client{Timeout: 9 * time.Second}
@@ -54,13 +58,13 @@ func scrapeGo() {
 		log.Print("scraping page ", page, " of go repos")
 		time.Sleep(6 * time.Second)
 		req, err := http.NewRequest(http.MethodGet, "https://api.github.com/search/repositories?q=language:golang&stars:%3E1&sort=stars&order=desc&per_page=100&page="+strconv.Itoa(page), nil)
-		check(err)
+		check(err, log)
 		req.Header.Add("Authorization", os.Getenv("GIT_TOKEN"))
 		res, err := client.Do(req)
-		check(err)
+		check(err, log)
 		defer res.Body.Close()
 		body, err := ioutil.ReadAll(res.Body)
-		check(err)
+		check(err, log)
 
 		gjson.GetBytes(body, "items").ForEach(func(_, item gjson.Result) bool {
 			var repo TrendingGo
@@ -97,13 +101,13 @@ func scrapeGo() {
 			log.Print(keyLIB, " no match ", valLIB.Name)
 			time.Sleep(6 * time.Second)
 			req, err := http.NewRequest(http.MethodGet, "https://api.github.com/search/repositories?q="+valLIB.FullName, nil)
-			check(err)
+			check(err, log)
 			req.Header.Add("Authorization", os.Getenv("GIT_TOKEN"))
 			res, err := client.Do(req)
-			check(err)
+			check(err, log)
 			defer res.Body.Close()
 			body, err := ioutil.ReadAll(res.Body)
-			check(err)
+			check(err, log)
 
 			gjson.GetBytes(body, "items").ForEach(func(i, item gjson.Result) bool {
 				item.ForEach(func(key, val gjson.Result) bool {

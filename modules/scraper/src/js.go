@@ -9,6 +9,8 @@ import (
 )
 
 func scrapeJS() {
+	log := logger.With().Str("func", "scrapeJS").Logger()
+
 	defer wg.Done()
 	var data []TrendingJS
 	c := colly.NewCollector(colly.Async(true))
@@ -17,7 +19,7 @@ func scrapeJS() {
 		pageSlice := strings.Split(fmt.Sprintf("%v", e.Request.URL), "page=")
 		pageStr := strings.Split(pageSlice[1], "&q=")[0]
 		page, err := strconv.Atoi(pageStr)
-		check(err)
+		check(err, log)
 		e.ForEach("section", func(i int, el *colly.HTMLElement) {
 			title := el.DOM.First().Find("h3").Text()
 			description := el.DOM.First().Find("p").Text()
@@ -31,7 +33,7 @@ func scrapeJS() {
 		})
 	})
 
-	c.OnError(func(_ *colly.Response, err error) { check(err) })
+	c.OnError(func(_ *colly.Response, err error) { check(err, log) })
 	// for page := 0; page < 2; page++ {
 	for _, subject := range []string{"backend", "front-end", "cli", "framework"} {
 		// log.Print("page ", page, ", ", subject)s

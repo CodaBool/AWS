@@ -7,7 +7,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	gLog "gorm.io/gorm/logger"
 )
 
 type TrendingGo struct {
@@ -75,9 +75,9 @@ var db *gorm.DB
 
 func dbInit() {
 	var err error
-	newLogger := logger.New(
+	newLogger := gLog.New(
 		basicLog.New(os.Stdout, "\r\n", basicLog.LstdFlags), // io writer
-		logger.Config{
+		gLog.Config{
 			SlowThreshold: 5 * time.Second, // Slow SQL threshold
 			Colorful:      true,            // Disable color
 		},
@@ -88,15 +88,15 @@ func dbInit() {
 	}), &gorm.Config{Logger: newLogger})
 	check(err)
 
-	log.Info().Msg("Migrating")
+	logger.Info().Msg("Migrating")
 	db.AutoMigrate(&TrendingGo{}, &TrendingGithub{}, &TrendingTV{}, &UpcomingMovie{}, &TrendingGame{}, &TrendingJS{}, &TrendingPY{}, &TrendingMovie{})
 }
 
 func upload(table string, data []any) {
-	log.Info().Msg("Clearing previous trending go data")
+	logger.Info().Msg("Clearing previous trending go data")
 	db.Exec("DELETE FROM " + table)
 
-	log.Info().Msg("Inserting data")
+	logger.Info().Msg("Inserting data")
 	result := db.Create(data)
 	check(result.Error)
 }

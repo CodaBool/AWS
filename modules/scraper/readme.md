@@ -1,6 +1,13 @@
-# Concurrency
-- lambda needs 3009Mb memory to get 3vCPU
+# 🖊️ Summary
+Scrapes 8 different websites for interesting Data. Including sites like:
 
-# Features
-- log the function running as context
-- look into if "error" should be changed to "message" for logging
+- imdb
+- steam
+- npm
+- pypi
+- github
+- and more...
+
+Writes the data to PostgreSQL using GORM, a Go ORM. 
+
+Eventually to be posted to Discord using the `discord` lambda

@@ -21,8 +21,6 @@ resource "aws_cloudwatch_event_target" "lambda" {
   input = var.event_input
 }
 
-data "aws_caller_identity" "current" {}
-
 resource "aws_iam_role" "lambda_assume" {
   name               = "${var.name}-lambda-assume"
   assume_role_policy = jsonencode({
@@ -33,8 +31,7 @@ resource "aws_iam_role" "lambda_assume" {
       Principal = {
         Service = "lambda.amazonaws.com"
       }
-      }
-    ]
+    }]
   })
 }
 
@@ -55,9 +52,8 @@ resource "aws_lambda_function" "main" {
   description      = var.description
   memory_size      = var.memory
   timeout          = 900
-  image_uri        = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/${var.name}:latest"
+  image_uri        = "${var.account}.dkr.ecr.us-east-1.amazonaws.com/${var.name}:latest"
   source_code_hash = split("sha256:", data.aws_ecr_image.lambda.id)[1]
-  # source_code_hash = filemd5("../dist/${each.value}")
   environment {
     variables = var.environment
   }
@@ -79,8 +75,6 @@ resource "aws_ecr_repository" "main" {
 
 resource "aws_ecr_lifecycle_policy" "remove_old_images" {
   repository = aws_ecr_repository.main.name
-  # example use of keeping certain tag image
-  # https://github.com/mathspace/terraform-aws-ecr-docker-image/blob/master/main.tf
   policy = jsonencode({
     rules = [{
       rulePriority = 1
@@ -98,15 +92,10 @@ resource "aws_ecr_lifecycle_policy" "remove_old_images" {
   })
 }
 
-# Necessary since the initial push would have relied on 
-data "external" "hash" {
-  program = ["${path.module}/hash.sh", var.path_to_dockerfile]
-}
-
-# Build and push the Docker image whenever the hash changes
+# Build and push the Docker image on changes
 resource "null_resource" "push" {
   triggers = {
-    hash = data.external.hash.result["hash"]
+    hash = md5(join("", [for f in fileset("${path.module}/src", "*"): filemd5("${path.module}/src/${f}")]))
   }
   provisioner "local-exec" {
     command     = "${path.module}/push.sh ${var.path_to_dockerfile} ${aws_ecr_repository.main.repository_url} ${var.tag}"

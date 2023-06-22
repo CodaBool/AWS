@@ -1,4 +1,4 @@
-# https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-create-rule-schedule.html#eb-cron-expressions
+# https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
 variable "interval" {
   default     = "cron(0 16 ? * MON-FRI *)" # 11am EST every weekday
   description = "How often to invoke the function in UTC"
@@ -13,7 +13,7 @@ variable "environment" {
 }
 
 variable "log_retention" {
-  default     = 7
+  default     = 60
   description = "how long to retain lambda execution log data in cloudwatch logs"
 }
 
@@ -23,6 +23,10 @@ variable "run_on_schedule" {
 }
 
 variable "name" {
+  type = string
+}
+
+variable "account" {
   type = string
 }
 

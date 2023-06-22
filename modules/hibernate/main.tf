@@ -1,12 +1,10 @@
 module "lambda" {
   source               = "../lambda"
   name                 = "hibernate"
-  path_to_dockerfile   = path.module
-  tag                  = "latest"
-  # log_retention        = 60
+  path_to_dockerfile   = "${path.module}/src"
   description          = "Automated starting and stopping EC2 to save on costs"
-  run_on_schedule      = true 
   interval             = "cron(0 17 * * ? *)" # Every day at 12pm
+  account              = var.account
   event_input          = jsonencode({ start = true })
 }
 
@@ -38,4 +36,8 @@ resource "aws_cloudwatch_event_target" "lambda" {
   rule  = aws_cloudwatch_event_rule.event_rule.id
   arn   = module.lambda.function.arn
   input = jsonencode({ start = false })
+}
+
+variable "account" {
+  type = string
 }

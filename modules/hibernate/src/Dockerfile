@@ -7,4 +7,4 @@ RUN go build -ldflags='-s -w'
 
 FROM gcr.io/distroless/static
 COPY --from=build /main /main
-CMD [ "/main" ]
+CMD ["/main"]

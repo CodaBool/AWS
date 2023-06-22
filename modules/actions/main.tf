@@ -1,5 +1,3 @@
-data "aws_caller_identity" "current" {}
-
 data "aws_iam_policy" "admin_access" {
   name = "AdministratorAccess"
 }
@@ -20,7 +18,7 @@ resource "aws_iam_role" "actions" {
       {
         Effect = "Allow",
         Principal = {
-          "Federated" : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"
+          "Federated" : "arn:aws:iam::${var.account}:oidc-provider/token.actions.githubusercontent.com"
         },
         Action = "sts:AssumeRoleWithWebIdentity",
         Condition = {
@@ -49,4 +47,8 @@ output "role_arn" {
 
 variable "github_repository" {
   default = "CodaBool/p12-slap"
+}
+
+variable "account" {
+  type = string
 }

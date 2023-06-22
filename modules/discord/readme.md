@@ -1,5 +1,4 @@
-# Packages
-- [tablewriter](https://github.com/olekukonko/tablewriter)
-- [discord go SDK](https://pkg.go.dev/github.com/bwmarrin/discordgo)
-- [pgx](github.com/jackc/pgx)
-- [pgxscan](github.com/georgysavva/scany)
+# 🖊️ Summary
+Posts to Discord the scraped data from Scraper lambda.
+
+Written in Go, uses pgx to read from PostgreSQL.

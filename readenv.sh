@@ -16,6 +16,7 @@ comma_arr=()
 for i in "${arr[@]}"
 do
   # echo "sync on $i"
+  # TODO: test if "=" can be in the value side
   res=$(awk '{$1=$1}1' FS='\n' OFS=',' RS= $i)
   # echo "result = $res"
   comma_arr+=("F=$i,$res")

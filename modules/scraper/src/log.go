@@ -6,25 +6,29 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var log zerolog.Logger
+var logger zerolog.Logger
 
-func buildLogger(local bool) {
-	if os.Getenv("PRETTY") != "" || !local {
+func buildLogger() {
+	logger = zerolog.New(os.Stderr).With().Logger()
+	if os.Getenv("AWS_LAMBDA_FUNCTION_NAME") == "" {
 		o := zerolog.ConsoleWriter{Out: os.Stdout, PartsExclude: []string{zerolog.TimestampFieldName}}
-		log = zerolog.New(o).With().Logger()
-	} else {
-		log = zerolog.New(os.Stderr).With().Logger()
-		// log = zerolog.New(os.Stderr).With().Str("func", "junk in the trunk").Logger()
+		logger = zerolog.New(o).With().Logger()
 	}
-	if os.Getenv("DEBUG") != "" {
-		zerolog.SetGlobalLevel(zerolog.TraceLevel)
-	} else {
+	zerolog.SetGlobalLevel(zerolog.TraceLevel)
+	if os.Getenv("QUIET") != "" {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 }
 
-func check(err error) {
-	if err != nil {
-		log.Fatal().Err(err).Msg("")
+func check(err error, log ...zerolog.Logger) {
+	// closest thing go has to default arguments
+	if len(log) > 0 {
+		if err != nil {
+			log[0].Fatal().Err(err).Msg("")
+		}
+	} else {
+		if err != nil {
+			logger.Fatal().Err(err).Msg("")
+		}
 	}
 }
