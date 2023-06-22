@@ -49,10 +49,6 @@ module "actions" {
   account = data.aws_caller_identity.current.account_id
 }
 
-# module "cloudwatch" {
-#   source = "./modules/cloudwatch"
-# }
-
 resource "aws_ssm_parameter" "all_env" {
   name        = "/env"
   description = "A comma seperated list of all aws envs"
