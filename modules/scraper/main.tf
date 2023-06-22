@@ -5,7 +5,7 @@ module "lambda" {
   memory               = 3072
   description          = "Scrapes things"
   account              = var.account
-  interval             = "cron(0 12 1 * ? *)" # 1st of every month 7am est
+  interval             = "cron(0 12 1 * ? *)" # 1st of every month 8am est
   environment = { for tuple in regexall("(.*?)=(.*)", file("${path.module}/src/.env")) : tuple[0] => sensitive(tuple[1]) }
 }
 

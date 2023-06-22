@@ -1,6 +1,6 @@
 # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
 variable "interval" {
-  default     = "cron(0 16 ? * MON-FRI *)" # 11am EST every weekday
+  default     = "cron(0 16 ? * MON-FRI *)" # 12am EST every weekday
   description = "How often to invoke the function in UTC"
 }
 

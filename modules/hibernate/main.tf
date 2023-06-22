@@ -3,7 +3,7 @@ module "lambda" {
   name                 = "hibernate"
   path_to_dockerfile   = "${path.module}/src"
   description          = "Automated starting and stopping EC2 to save on costs"
-  interval             = "cron(0 17 * * ? *)" # Every day at 12pm
+  interval             = "cron(0 16 * * ? *)" # Every day at 12pm
   account              = var.account
   event_input          = jsonencode({ start = true })
 }
@@ -28,7 +28,7 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
 
 resource "aws_cloudwatch_event_rule" "event_rule" {
   name_prefix         = "scheduled-${module.lambda.function.function_name}"
-  schedule_expression = "cron(0 5 * * ? *)" # Every day at 12am
+  schedule_expression = "cron(0 4 * * ? *)" # Every day at 12am
   description         = "Invoke the ${module.lambda.function.function_name} Lambda function"
 }
 
