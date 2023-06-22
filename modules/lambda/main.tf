@@ -95,7 +95,7 @@ resource "aws_ecr_lifecycle_policy" "remove_old_images" {
 # Build and push the Docker image on changes
 resource "null_resource" "push" {
   triggers = {
-    hash = md5(join("", [for f in fileset("${path.module}/src", "*"): filemd5("${path.module}/src/${f}")]))
+    hash = md5(join("", [for f in fileset("${var.path_to_dockerfile}", "*"): filemd5("${var.path_to_dockerfile}/${f}")]))
   }
   provisioner "local-exec" {
     command     = "${path.module}/push.sh ${var.path_to_dockerfile} ${aws_ecr_repository.main.repository_url} ${var.tag}"

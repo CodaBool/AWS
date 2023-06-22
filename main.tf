@@ -59,8 +59,3 @@ resource "aws_ssm_parameter" "all_env" {
 data "external" "read_all_env" {
   program = ["bash", "readenv.sh"]
 }
-
-output "actions_role" {
-  value       = module.actions.role_arn
-  description = "github actions assume role"
-}

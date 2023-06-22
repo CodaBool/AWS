@@ -3,16 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	// "encoding/json"
 	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/sns"
 )
 
 type Input struct {
@@ -102,14 +98,14 @@ func handle(ctx context.Context, input Input) (string, error) {
 	}
 	log.Print(subject)
 
-	message := strings.Join(ids[:], ", ")
-	clientSNS := sns.NewFromConfig(cfg)
-	_, err = clientSNS.Publish(ctx, &sns.PublishInput{
-		Message:  aws.String(message),
-		Subject:  aws.String(subject),
-		TopicArn: aws.String("arn:aws:sns:us-east-1:919759177803:notify"),
-	})
-	check(err)
+	// message := strings.Join(ids[:], ", ")
+	// clientSNS := sns.NewFromConfig(cfg)
+	// _, err = clientSNS.Publish(ctx, &sns.PublishInput{
+	// 	Message:  aws.String(message),
+	// 	Subject:  aws.String(subject),
+	// 	TopicArn: aws.String("arn:aws:sns:us-east-1:919759177803:notify"),
+	// })
+	// check(err)
 
 	return subject, nil
 }
