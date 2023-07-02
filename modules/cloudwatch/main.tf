@@ -13,7 +13,7 @@ resource "aws_iam_role" "cw_assume" {
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
-  name_prefix = "ec2_profile"
+  name = var.profile_name
   role = aws_iam_role.cw_assume.name
 }
 
@@ -52,4 +52,8 @@ resource "aws_iam_policy" "retention" {
 
 output "profile" {
   value = aws_iam_instance_profile.ec2_profile.name
+}
+
+variable "profile_name" {
+  type=string
 }
