@@ -9,6 +9,27 @@ resource "aws_spot_instance_request" "main" {
   iam_instance_profile   = var.profile_name
 }
 
+
+# INFO: you can use these blocks to print out results from a filter
+# it uses the `aws ec2 describe-images` api, any filters from there work
+
+# data "aws_ami" "image" {
+#   most_recent = true
+#   owners = ["amazon"]
+#   filter {
+#     name          = "name"
+#     values        = ["al2*"]
+#   }
+#   filter {
+#     name = "architecture"
+#     values = ["arm64"]
+#   }
+# }
+
+# output "amis" {
+#   value = data.aws_ami.image
+# }
+
 data "aws_ami" "image" {
   most_recent = true
   owners = ["self"]
@@ -57,7 +78,7 @@ resource "aws_default_subnet" "a" {
 # }
 
 resource "aws_security_group" "main" {
-  name   = var.name
+  name_prefix   = var.name
   vpc_id = aws_default_vpc.default.id
   ingress {
     from_port   = 80

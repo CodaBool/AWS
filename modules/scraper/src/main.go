@@ -21,7 +21,7 @@ func main() {
 }
 
 func handle(ctx context.Context, _ any) (string, error) {
-	dbInit()
+	dbInit(true)
 	wg.Add(8)
 	go scrapePY(false)        // +100 rows | false = 101 req | true = 1 req
 	go scrapeGames()          // +49  rows | 1 req

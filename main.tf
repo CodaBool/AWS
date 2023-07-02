@@ -34,10 +34,10 @@ module "lambda_discord" {
   account = data.aws_caller_identity.current.account_id
 }
 
-module "lambda_hibernate" {
-  source = "./modules/hibernate"
-  account = data.aws_caller_identity.current.account_id
-}
+# module "lambda_hibernate" {
+#   source = "./modules/hibernate"
+#   account = data.aws_caller_identity.current.account_id
+# }
 
 module "key" {
   source = "./modules/key"
@@ -59,3 +59,7 @@ resource "aws_ssm_parameter" "all_env" {
 data "external" "read_all_env" {
   program = ["bash", "readenv.sh"]
 }
+
+# module "test" {
+#   source = "./modules/delete"
+# }

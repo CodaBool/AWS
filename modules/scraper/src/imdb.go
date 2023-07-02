@@ -41,7 +41,33 @@ func scrapeTV() {
 
 	defer wg.Done()
 	var data []TrendingTV
+	var data2 []TrendingTV
 	c := colly.NewCollector()
+
+	// IMDB is splitting traffic between 2 versions of the site
+	// For now I am scraping both possible versions since
+	// idk which one nginx will give me
+	c.OnHTML(".compact-list-view", func(e *colly.HTMLElement) {
+		e.ForEach("li", func(j int, el *colly.HTMLElement) {
+			var tempData TrendingTV
+			sign := "-"
+			if el.DOM.Find(".rank-up").Length() == 1 {
+				sign = "+"
+			}
+			vel := el.DOM.Find(".meter-const-ranking").Text()
+			vel = strings.Split(vel, "(")[1]
+			vel = strings.Split(vel, ")")[0]
+			if vel == "" {
+				sign = ""
+				vel = "no change"
+			}
+			tempData.Velocity = sign + vel
+			tempData.Rank = j + 1
+			tempData.Title = strings.TrimSpace(el.DOM.Find("h3").Text())
+			tempData.Rating = strings.TrimSpace(el.DOM.Find(".ipc-rating-star--imdb").Text())
+			data = append(data, tempData)
+		})
+	})
 	c.OnHTML(".lister-list", func(e *colly.HTMLElement) {
 		e.ForEach("tr", func(i int, e *colly.HTMLElement) {
 			e.ForEach("a", func(_ int, el *colly.HTMLElement) {
@@ -56,7 +82,7 @@ func scrapeTV() {
 						sign = ""
 						vel = "0)"
 					}
-					data = append(data, TrendingTV{
+					data2 = append(data2, TrendingTV{
 						Title:    el.Text,
 						Rank:     i,
 						Velocity: sign + vel[:len(vel)-1],
@@ -69,15 +95,47 @@ func scrapeTV() {
 	c.OnError(func(_ *colly.Response, err error) { check(err, log) })
 	c.Visit("https://www.imdb.com/chart/tvmeter")
 	db.Exec("DELETE FROM trending_tvs")
-	log.Info().Msg(fmt.Sprintf("+%d tv", len(data)))
-	db.Create(data)
+	log.Print("new site scraped data = ", len(data), " | old site scraped data = ", len(data2))
+	log.Info().Msg(fmt.Sprintf("+%d tv", len(data)+len(data2)))
+	if len(data) > len(data2) {
+		db.Create(data)
+	} else {
+		db.Create(data2)
+	}
 }
 
 func scrapeTrendingMovies() {
 	log := logger.With().Str("func", "scrapeTrendingMovies").Logger()
 	defer wg.Done()
 	var data []TrendingMovie
+	var data2 []TrendingMovie
 	c := colly.NewCollector()
+
+	// IMDB is splitting traffic between 2 versions of the site
+	// For now I am scraping both possible versions since
+	// idk which one nginx will give me
+	c.OnHTML(".compact-list-view", func(e *colly.HTMLElement) {
+		e.ForEach("li", func(j int, el *colly.HTMLElement) {
+			var tempData TrendingMovie
+			sign := "-"
+			if el.DOM.Find(".rank-up").Length() == 1 {
+				sign = "+"
+			}
+			vel := el.DOM.Find(".meter-const-ranking").Text()
+			vel = strings.Split(vel, "(")[1]
+			vel = strings.Split(vel, ")")[0]
+			if vel == "" {
+				sign = ""
+				vel = "no change"
+			}
+
+			tempData.Velocity = sign + vel
+			tempData.Rank = j + 1
+			tempData.Title = strings.TrimSpace(el.DOM.Find("h3").Text())
+			tempData.Rating = strings.TrimSpace(el.DOM.Find(".ipc-rating-star--imdb").Text())
+			data = append(data, tempData)
+		})
+	})
 	c.OnHTML(".lister-list", func(e *colly.HTMLElement) {
 		e.ForEach("tr", func(j int, el *colly.HTMLElement) {
 			var tempData TrendingMovie
@@ -100,12 +158,19 @@ func scrapeTrendingMovies() {
 					tempData.Rating = strings.TrimSpace(ele.Text)
 				}
 			})
-			data = append(data, tempData)
+			data2 = append(data2, tempData)
 		})
 	})
 	c.OnError(func(_ *colly.Response, err error) { check(err, log) })
 	c.Visit("https://www.imdb.com/chart/moviemeter")
 	db.Exec("DELETE FROM trending_movies")
-	log.Info().Msg(fmt.Sprintf("+%d trending movies", len(data)))
-	db.Create(data)
+
+	// again a split on site version means idk which data slice will have data
+	log.Print("new site scraped data = ", len(data), " | old site scraped data = ", len(data2))
+	log.Info().Msg(fmt.Sprintf("+%d trending movies", len(data)+len(data2)))
+	if len(data) > len(data2) {
+		db.Create(data)
+	} else {
+		db.Create(data2)
+	}
 }

@@ -1,5 +1,5 @@
 resource "aws_iam_role" "cw_assume" {
-  name               = "cloudwatch-assume"
+  name_prefix               = "cloudwatch-assume"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -13,7 +13,7 @@ resource "aws_iam_role" "cw_assume" {
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "ec2_profile"
+  name_prefix = "ec2_profile"
   role = aws_iam_role.cw_assume.name
 }
 
@@ -33,7 +33,7 @@ resource "aws_iam_role_policy_attachment" "retention" {
 }
 
 resource "aws_iam_policy" "retention" {
-  name        = "change_retention"
+  name_prefix        = "change_retention"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -44,8 +44,12 @@ resource "aws_iam_policy" "retention" {
   })
 }
 
-resource "aws_ssm_parameter" "agent" {
-  name  = "agent"
-  type  = "SecureString"
-  value = file("${path.module}/agent.json")
+# resource "aws_ssm_parameter" "agent" {
+#   name  = "agent"
+#   type  = "SecureString"
+#   value = file("${path.module}/agent.json")
+# }
+
+output "profile" {
+  value = aws_iam_instance_profile.ec2_profile.name
 }

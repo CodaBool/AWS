@@ -45,12 +45,19 @@ resource "aws_cloudwatch_log_group" "delete_old_logs" {
   retention_in_days = var.log_retention
 }
 
+# NEW: lambdas can be invoked by URL
+# resource "aws_lambda_function_url" "main" {
+#   function_name      = aws_lambda_function.main.function_name
+#   authorization_type = "NONE"
+# }
+
 resource "aws_lambda_function" "main" {
   function_name    = var.name
   role             = aws_iam_role.lambda_assume.arn
   package_type     = "Image"
   description      = var.description
   memory_size      = var.memory
+  architectures    = ["arm64"]
   timeout          = 900
   image_uri        = "${var.account}.dkr.ecr.us-east-1.amazonaws.com/${var.name}:latest"
   source_code_hash = split("sha256:", data.aws_ecr_image.lambda.id)[1]

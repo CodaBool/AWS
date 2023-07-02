@@ -73,7 +73,7 @@ type TrendingPY struct {
 
 var db *gorm.DB
 
-func dbInit() {
+func dbInit(migrate bool) {
 	var err error
 	newLogger := gLog.New(
 		basicLog.New(os.Stdout, "\r\n", basicLog.LstdFlags), // io writer
@@ -89,7 +89,9 @@ func dbInit() {
 	check(err)
 
 	logger.Info().Msg("Migrating")
-	db.AutoMigrate(&TrendingGo{}, &TrendingGithub{}, &TrendingTV{}, &UpcomingMovie{}, &TrendingGame{}, &TrendingJS{}, &TrendingPY{}, &TrendingMovie{})
+	if migrate {
+		db.AutoMigrate(&TrendingGo{}, &TrendingGithub{}, &TrendingTV{}, &UpcomingMovie{}, &TrendingGame{}, &TrendingJS{}, &TrendingPY{}, &TrendingMovie{})
+	}
 }
 
 func upload(table string, data []any) {
