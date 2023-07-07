@@ -7,32 +7,15 @@ resource "aws_spot_instance_request" "main" {
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.main.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  tags = {
+    Name = var.name
+  }
 }
 
 # max price to request, use aws ec2 describe-spot-price-history
 data "external" "lowest_price" {
   program = ["bash", "${path.module}/price.sh", var.instance_type]
 }
-
-# INFO: you can use these blocks to print out results from a filter
-# it uses the `aws ec2 describe-images` api, any filters from there work
-
-# data "aws_ami" "image" {
-#   most_recent = true
-#   owners = ["amazon"]
-#   filter {
-#     name          = "name"
-#     values        = ["al2*"]
-#   }
-#   filter {
-#     name = "architecture"
-#     values = ["arm64"]
-#   }
-# }
-
-# output "amis" {
-#   value = data.aws_ami.image
-# }
 
 data "aws_ami" "image" {
   most_recent = true
@@ -47,31 +30,13 @@ resource "aws_eip" "main" {
   instance = aws_spot_instance_request.main.spot_instance_id
 }
 
-# can use this to get ip with data.external.my_ip.result.ip
-# however, if running terraform in a pipeline this is moot
-# data "external" "my_ip" {
-#   program = ["curl", "https://ipinfo.io"]
-# }
-
 resource "aws_default_vpc" "default" {}
 # aws_default_vpc.default.cidr_block
 
-# pick the cheapest subnet
+# NOTE: different subnets have different spot prices
 resource "aws_default_subnet" "a" {
   availability_zone = "us-east-1a"
 }
-# resource "aws_default_subnet" "b" {
-#   availability_zone = "us-east-1b"
-# }
-# resource "aws_default_subnet" "c" {
-#   availability_zone = "us-east-1c"
-# }
-# resource "aws_default_subnet" "d" {
-#   availability_zone = "us-east-1d"
-# }
-# resource "aws_default_subnet" "f" {
-#   availability_zone = "us-east-1f"
-# }
 
 resource "aws_security_group" "main" {
   name_prefix   = var.name
