@@ -1,14 +1,18 @@
 resource "aws_spot_instance_request" "main" {
   ami                    = data.aws_ami.image.id
-  spot_price             = var.price    # max price to request, use aws ec2 describe-spot-price-history
+  spot_price             = data.external.lowest_price.result.price
   wait_for_fulfillment   = true          # wait up to 10min 
   instance_type          = var.instance_type
   subnet_id              = aws_default_subnet.a.id
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.main.id]
-  iam_instance_profile   = var.profile_name
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
 }
 
+# max price to request, use aws ec2 describe-spot-price-history
+data "external" "lowest_price" {
+  program = ["bash", "price.sh", var.instance_type]
+}
 
 # INFO: you can use these blocks to print out results from a filter
 # it uses the `aws ec2 describe-images` api, any filters from there work
@@ -35,20 +39,12 @@ data "aws_ami" "image" {
   owners = ["self"]
   filter {
     name = "tag:Name"
-    values = [var.name]
+    values = ["${var.name}*"]
   }
 }
 
 resource "aws_eip" "main" {
   instance = aws_spot_instance_request.main.spot_instance_id
-}
-
-output "instance" {
-  value = aws_spot_instance_request.main
-}
-
-output "eip" {
-  value = aws_eip.main
 }
 
 # can use this to get ip with data.external.my_ip.result.ip
@@ -101,4 +97,52 @@ resource "aws_security_group" "main" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+
+resource "aws_iam_role" "cw_assume" {
+  name_prefix               = "cloudwatch-assume"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
+    }]
+  })
+}
+
+# Cloudwatch resources
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = var.profile_name
+  role = aws_iam_role.cw_assume.name
+}
+
+resource "aws_iam_role_policy_attachment" "ssm" {
+  role       = aws_iam_role.cw_assume.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy_attachment" "logs" {
+  role       = aws_iam_role.cw_assume.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "retention" {
+  role       = aws_iam_role.cw_assume.name
+  policy_arn = aws_iam_policy.retention.arn
+}
+
+resource "aws_iam_policy" "retention" {
+  name_prefix        = "change_retention"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "logs:PutRetentionPolicy"
+      Effect   = "Allow"
+      Resource = "*"
+    }]
+  })
 }
