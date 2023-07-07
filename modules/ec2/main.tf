@@ -11,7 +11,7 @@ resource "aws_spot_instance_request" "main" {
 
 # max price to request, use aws ec2 describe-spot-price-history
 data "external" "lowest_price" {
-  program = ["bash", path.module, "/price.sh", var.instance_type]
+  program = ["bash", "${path.module}/price.sh", var.instance_type]
 }
 
 # INFO: you can use these blocks to print out results from a filter
