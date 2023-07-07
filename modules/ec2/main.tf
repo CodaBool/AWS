@@ -6,7 +6,7 @@ resource "aws_spot_instance_request" "main" {
   subnet_id              = aws_default_subnet.a.id
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.main.id]
-  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.arn
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
 }
 
 # max price to request, use aws ec2 describe-spot-price-history
