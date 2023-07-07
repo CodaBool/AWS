@@ -80,11 +80,14 @@ resource "aws_default_subnet" "a" {
 resource "aws_security_group" "main" {
   name_prefix   = var.name
   vpc_id = aws_default_vpc.default.id
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  dynamic "ingress" {
+    for_each = var.app_ports
+    content {
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
   }
   ingress {
     from_port   = 22
