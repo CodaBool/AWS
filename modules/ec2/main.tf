@@ -116,7 +116,7 @@ resource "aws_iam_role" "cw_assume" {
 
 # Cloudwatch resources
 resource "aws_iam_instance_profile" "ec2_profile" {
-  name = var.profile_name
+  name = var.name
   role = aws_iam_role.cw_assume.name
 }
 
