@@ -47,7 +47,6 @@ func handle(ctx context.Context, _ any) (string, error) {
 	github(db, "938973612461916169")
 	javascript(db, "938974163572518943")
 	dg.Close()
-	logger.Fatal().Msg("break")
 	return "", nil
 }
 
@@ -205,7 +204,7 @@ func upcomingMovies(db *pgxpool.Pool, channelId string) {
 func golang(db *pgxpool.Pool, channelId string) {
 	log := logger.With().Str("func", "golang").Logger()
 	var gos []*TrendingGo
-	err := pg.Select(context.Background(), db, &gos, `SELECT * FROM trending_gos ORDER BY stars ASC LIMIT 100 OFFSET 19`)
+	err := pg.Select(context.Background(), db, &gos, `SELECT * FROM trending_gos ORDER BY stars DESC LIMIT 100 OFFSET 19`)
 	check(err, log)
 
 	log.Print("selected rows ", len(gos))
@@ -244,7 +243,7 @@ func golang(db *pgxpool.Pool, channelId string) {
 		}
 		table.AppendBulk(tbData)
 		table.Render()
-		messages = append(messages, fmt.Sprintf("```md\nTop Go Projects (%d/5), scraped %s\n\n%s```", 5-i, scrapeTime.Format("01-02"), tableString))
+		messages = append(messages, fmt.Sprintf("```md\nTop Go Projects (%d/5), scraped %s\n\n%s```", i+1, scrapeTime.Format("01-02"), tableString))
 		table.ClearRows()
 		tableString.Reset()
 	}
@@ -254,7 +253,7 @@ func golang(db *pgxpool.Pool, channelId string) {
 func python(db *pgxpool.Pool, channelId string) {
 	log := logger.With().Str("func", "python").Logger()
 	var pies []*TrendingPY
-	err := pg.Select(context.Background(), db, &pies, `SELECT * FROM trending_pies ORDER BY downloads`)
+	err := pg.Select(context.Background(), db, &pies, `SELECT * FROM trending_pies ORDER BY downloads DESC`)
 	check(err, log)
 
 	log.Print("selected rows ", len(pies))
@@ -288,7 +287,7 @@ func python(db *pgxpool.Pool, channelId string) {
 		}
 		table.AppendBulk(tbData)
 		table.Render()
-		messages = append(messages, fmt.Sprintf("```md\nTop Python (%d/5), scraped %s\n\n%s```", 5-i, scrapeTime.Format("01-02"), tableString))
+		messages = append(messages, fmt.Sprintf("```md\nTop Python packages (%d/5), scraped %s\n\n%s```", i+1, scrapeTime.Format("01-02"), tableString))
 		table.ClearRows()
 		tableString.Reset()
 	}
@@ -303,7 +302,6 @@ func games(db *pgxpool.Pool, channelId string) {
 
 	log.Print("selected rows ", len(gs))
 	log.Trace().Int("rows", len(gs)).Msg("")
-	log.Warn().Int("rows", len(gs)).Msg("placeholder")
 
 	tableString := &strings.Builder{}
 	table := tablewriter.NewWriter(tableString)
@@ -385,7 +383,7 @@ func ShortText(s string, i int) string {
 func github(db *pgxpool.Pool, channelId string) {
 	log := logger.With().Str("func", "github").Logger()
 	var ghs []*TrendingGithub
-	err := pg.Select(context.Background(), db, &ghs, `SELECT * FROM trending_githubs ORDER BY stars ASC`)
+	err := pg.Select(context.Background(), db, &ghs, `SELECT * FROM trending_githubs ORDER BY stars DESC`)
 	check(err, log)
 
 	log.Print("selected rows ", len(ghs))
@@ -419,7 +417,7 @@ func github(db *pgxpool.Pool, channelId string) {
 		}
 		table.AppendBulk(tbData)
 		table.Render()
-		messages = append(messages, fmt.Sprintf("```md\nTop GitHub Repos (%d/5), scraped %s\n\n%s```", 5-i, scrapeTime.Format("01-02"), tableString))
+		messages = append(messages, fmt.Sprintf("```md\nTop GitHub Repos (%d/5), scraped %s\n\n%s```", i+1, scrapeTime.Format("01-02"), tableString))
 		table.ClearRows()
 		tableString.Reset()
 	}
