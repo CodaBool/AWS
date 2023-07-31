@@ -39,7 +39,7 @@ data "aws_ami" "image" {
 }
 
 resource "aws_eip" "main" {
-  instance = aws_spot_instance_request.main.spot_instance_id
+  instance = aws_instance.main.id
 }
 
 resource "aws_default_vpc" "default" {}
