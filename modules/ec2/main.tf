@@ -1,18 +1,33 @@
-resource "aws_spot_instance_request" "main" {
+# spot instances will be evicted once price changes
+# they should be close in price to an on-demand instance
+
+# resource "aws_spot_instance_request" "main" {
+#   ami                    = data.aws_ami.image.id
+#   spot_price             = data.external.lowest_price.result.price
+#   wait_for_fulfillment   = true          # wait up to 10min 
+#   instance_type          = var.instance_type
+#   subnet_id              = aws_default_subnet.a.id
+#   key_name               = var.key_name
+#   vpc_security_group_ids = [aws_security_group.main.id]
+#   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+# }
+
+resource "aws_instance" "main" {
   ami                    = data.aws_ami.image.id
-  spot_price             = data.external.lowest_price.result.price
-  wait_for_fulfillment   = true          # wait up to 10min 
-  instance_type          = var.instance_type
+  instance_type = var.instance_type
   subnet_id              = aws_default_subnet.a.id
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.main.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  tags = {
+    Name = var.name
+  }
 }
 
 # max price to request, use aws ec2 describe-spot-price-history
-data "external" "lowest_price" {
-  program = ["bash", "${path.module}/price.sh", var.instance_type]
-}
+# data "external" "lowest_price" {
+#   program = ["bash", "${path.module}/price.sh", var.instance_type]
+# }
 
 data "aws_ami" "image" {
   most_recent = true
