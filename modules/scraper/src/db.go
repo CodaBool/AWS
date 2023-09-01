@@ -52,6 +52,7 @@ type TrendingTV struct {
 type TrendingGame struct {
 	Title     string
 	Price     string
+	MSRP      string
 	UpdatedAt time.Time
 }
 
@@ -88,17 +89,17 @@ func dbInit(migrate bool) {
 	}), &gorm.Config{Logger: newLogger})
 	check(err)
 
-	logger.Info().Msg("Migrating")
+	slog.Info("Migrating")
 	if migrate {
 		db.AutoMigrate(&TrendingGo{}, &TrendingGithub{}, &TrendingTV{}, &UpcomingMovie{}, &TrendingGame{}, &TrendingJS{}, &TrendingPY{}, &TrendingMovie{})
 	}
 }
 
 func upload(table string, data []any) {
-	logger.Info().Msg("Clearing previous trending go data")
+	slog.Info("Clearing previous trending go data")
 	db.Exec("DELETE FROM " + table)
 
-	logger.Info().Msg("Inserting data")
+	slog.Info("Inserting data")
 	result := db.Create(data)
 	check(result.Error)
 }

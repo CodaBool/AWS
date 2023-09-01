@@ -6,10 +6,8 @@ run: build
   -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
   -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
   -e AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-''} \
-  -e AWS_LAMBDA_FUNCTION_TIMEOUT=900 \
   --env-file ./.env \
-  -p 9000:8080 \
-  --rm --name discord \
+  --rm \
   discord
 
 upload:
@@ -17,6 +15,3 @@ upload:
   docker build -t discord .
   docker tag discord:latest 919759177803.dkr.ecr.us-east-1.amazonaws.com/discord:latest
   docker push 919759177803.dkr.ecr.us-east-1.amazonaws.com/discord:latest
-  
-test:
-  curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d "{}"

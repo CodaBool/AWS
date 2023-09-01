@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func scrapeUpcomingMovies() {
-	log := logger.With().Str("func", "scrapeUpcomingMovies").Logger()
+	// log := logger.With().Str("func", "scrapeUpcomingMovies").Logger()
 
 	defer wg.Done()
 	var data []UpcomingMovie
@@ -20,7 +21,7 @@ func scrapeUpcomingMovies() {
 			e.ForEach("a", func(_ int, el *colly.HTMLElement) {
 				if el.Text != "" {
 					releaseTime, err := time.Parse("Jan 2, 2006", release)
-					check(err, log)
+					check(err)
 					data = append(data, UpcomingMovie{
 						Release: releaseTime,
 						Title:   el.Text[:len(el.Text)-7],
@@ -29,15 +30,15 @@ func scrapeUpcomingMovies() {
 			})
 		})
 	})
-	c.OnError(func(_ *colly.Response, err error) { check(err, log) })
+	c.OnError(func(_ *colly.Response, err error) { check(err) })
 	c.Visit("https://www.imdb.com/calendar/?region=US&type=MOVIE")
 	db.Exec("DELETE FROM upcoming_movies")
-	log.Info().Msg(fmt.Sprintf("+%d upcoming movies", len(data)))
+	slog.Info(fmt.Sprintf("+%d upcoming movies", len(data)))
 	db.Create(data)
 }
 
 func scrapeTV() {
-	log := logger.With().Str("func", "scrapeTV").Logger()
+	// log := logger.With().Str("func", "scrapeTV").Logger()
 
 	defer wg.Done()
 	var data []TrendingTV
@@ -92,11 +93,11 @@ func scrapeTV() {
 			})
 		})
 	})
-	c.OnError(func(_ *colly.Response, err error) { check(err, log) })
+	c.OnError(func(_ *colly.Response, err error) { check(err) })
 	c.Visit("https://www.imdb.com/chart/tvmeter")
 	db.Exec("DELETE FROM trending_tvs")
 	log.Print("new site scraped data = ", len(data), " | old site scraped data = ", len(data2))
-	log.Info().Msg(fmt.Sprintf("+%d tv", len(data)+len(data2)))
+	slog.Info(fmt.Sprintf("+%d tv", len(data)+len(data2)))
 	if len(data) > len(data2) {
 		db.Create(data)
 	} else {
@@ -105,7 +106,7 @@ func scrapeTV() {
 }
 
 func scrapeTrendingMovies() {
-	log := logger.With().Str("func", "scrapeTrendingMovies").Logger()
+	// log := logger.With().Str("func", "scrapeTrendingMovies").Logger()
 	defer wg.Done()
 	var data []TrendingMovie
 	var data2 []TrendingMovie
@@ -161,13 +162,13 @@ func scrapeTrendingMovies() {
 			data2 = append(data2, tempData)
 		})
 	})
-	c.OnError(func(_ *colly.Response, err error) { check(err, log) })
+	c.OnError(func(_ *colly.Response, err error) { check(err) })
 	c.Visit("https://www.imdb.com/chart/moviemeter")
 	db.Exec("DELETE FROM trending_movies")
 
 	// again a split on site version means idk which data slice will have data
 	log.Print("new site scraped data = ", len(data), " | old site scraped data = ", len(data2))
-	log.Info().Msg(fmt.Sprintf("+%d trending movies", len(data)+len(data2)))
+	slog.Info(fmt.Sprintf("+%d trending movies", len(data)+len(data2)))
 	if len(data) > len(data2) {
 		db.Create(data)
 	} else {

@@ -12,8 +12,9 @@ import (
 var wg sync.WaitGroup
 
 func main() {
-	buildLogger()
-	if os.Getenv("AWS_LAMBDA_FUNCTION_NAME") == "" {
+	local := os.Getenv("AWS_LAMBDA_FUNCTION_NAME") == ""
+	buildLogger(true, false, local)
+	if local {
 		handle(context.TODO(), nil)
 	} else {
 		lambda.Start(handle)

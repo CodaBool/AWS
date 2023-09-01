@@ -44,6 +44,7 @@ type TrendingTV struct {
 type TrendingGame struct {
 	Title     string
 	Price     string
+	MSRP      string
 	UpdatedAt time.Time
 }
 

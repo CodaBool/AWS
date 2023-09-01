@@ -3,7 +3,8 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -13,18 +14,18 @@ import (
 )
 
 func scrapePY(skipDesc bool) {
-	log := logger.With().Str("func", "scrapePY").Logger()
+	// log := logger.With().Str("func", "scrapePY").Logger()
 
 	defer wg.Done()
 	var data []TrendingPY
 	client := &http.Client{Timeout: 15 * time.Second}
 	req, err := http.NewRequest(http.MethodGet, "https://hugovk.github.io/top-pypi-packages/top-pypi-packages-30-days.min.json", nil)
-	check(err, log)
+	check(err)
 	res, err := client.Do(req)
-	check(err, log)
+	check(err)
 	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	check(err, log)
+	body, err := io.ReadAll(res.Body)
+	check(err)
 
 	gjson.GetBytes(body, "rows").ForEach(func(index gjson.Result, item gjson.Result) bool {
 		if index.Int() == 100 {
@@ -45,16 +46,16 @@ func scrapePY(skipDesc bool) {
 
 	if skipDesc {
 		db.Exec("DELETE FROM trending_pies")
-		log.Info().Msg(fmt.Sprintf("+%d short py", len(data)))
+		slog.Info(fmt.Sprintf("+%d short py", len(data)))
 		db.Create(data)
 	} else {
-		log.Info().Msg(fmt.Sprintf("fetching desc for %d .py packages (est. 2 minutes)", len(data)))
+		slog.Info(fmt.Sprintf("fetching desc for %d .py packages (est. 2 minutes)", len(data)))
 		scrapeSummary(data)
 	}
 }
 
 func scrapeSummary(packages []TrendingPY) {
-	log := logger.With().Str("func", "scrapeSummary").Logger()
+	// log := logger.With().Str("func", "scrapeSummary").Logger()
 	c := colly.NewCollector()
 	var newData []TrendingPY
 	c.WithTransport(&http.Transport{
@@ -82,12 +83,12 @@ func scrapeSummary(packages []TrendingPY) {
 		}
 	})
 	c.OnError(func(r *colly.Response, err error) {
-		check(err, log)
+		check(err)
 	})
 	for _, p := range packages {
 		c.Visit("https://www.pypistats.org/packages/" + p.Name)
 	}
-	log.Info().Msg(fmt.Sprintf("+%d long py", len(newData)))
+	slog.Info(fmt.Sprintf("+%d long py", len(newData)))
 	db.Exec("DELETE FROM trending_pies")
 	db.Create(newData)
 }
