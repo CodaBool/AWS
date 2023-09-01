@@ -74,6 +74,10 @@ func trendingMovies() {
 	check(err)
 
 	slog.Info("selected", "rows", len(movies))
+	if len(movies) == 0 {
+		slog.Warn("no data in trending_movies")
+		return
+	}
 
 	var fields []*discordgo.MessageEmbedField
 	for _, m := range movies {
@@ -111,12 +115,16 @@ func tv() {
 	err := pg.Select(context.Background(), db, &tvs, `SELECT * FROM trending_tvs LIMIT 25`)
 	check(err)
 
-	slog.Info("selected", "rows", len(tvs))
+	slog.Info("selected tv", "rows", len(tvs))
+	if len(tvs) == 0 {
+		slog.Warn("no data in trending_tvs")
+		return
+	}
 
 	var fields []*discordgo.MessageEmbedField
 	for _, v := range tvs {
 		scrapedAt = v.UpdatedAt
-		name := "#" + strconv.Itoa(v.Rank+1) + " " + v.Title
+		name := "#" + strconv.Itoa(v.Rank) + " " + v.Title
 		value := "★" + v.Rating + " (" + v.Velocity + ")"
 		fields = append(fields, &discordgo.MessageEmbedField{
 			Name:  name,
@@ -149,7 +157,11 @@ func upcomingMovies() {
 	err := pg.Select(context.Background(), db, &movies, `SELECT * FROM upcoming_movies LIMIT 25`)
 	check(err)
 
-	slog.Info("selected", "rows", len(movies))
+	slog.Info("selected upcomingMovies", "rows", len(movies))
+	if len(movies) == 0 {
+		slog.Warn("no data in upcoming_movies")
+		return
+	}
 
 	var newMovies []map[string]interface{}
 	for _, movie := range movies {
@@ -211,7 +223,10 @@ func golang() {
 	err := pg.Select(context.Background(), db, &gos, `SELECT * FROM trending_gos ORDER BY stars DESC LIMIT 100 OFFSET 19`)
 	check(err)
 
-	slog.Info("selected", "rows", len(gos))
+	if len(gos) == 0 {
+		slog.Warn("no data in trending_gos")
+		return
+	}
 
 	interfaces := make([]interface{}, len(gos))
 	for i, v := range gos {
@@ -259,7 +274,7 @@ func python() {
 	err := pg.Select(context.Background(), db, &pies, `SELECT * FROM trending_pies ORDER BY downloads DESC`)
 	check(err)
 
-	slog.Info("selected", "rows", len(pies))
+	slog.Info("selected python", "rows", len(pies))
 
 	interfaces := make([]interface{}, len(pies))
 	for i, v := range pies {
@@ -302,7 +317,12 @@ func games() {
 	err := pg.Select(context.Background(), db, &gs, `SELECT * FROM trending_games LIMIT 16`)
 	check(err)
 
-	slog.Info("selected", "rows", len(gs))
+	slog.Info("selected games", "rows", len(gs))
+
+	if len(gs) == 0 {
+		slog.Warn("no data in trending_games")
+		return
+	}
 
 	tableString := &strings.Builder{}
 	table := tablewriter.NewWriter(tableString)
@@ -331,7 +351,7 @@ func javascript() {
 	err := pg.Select(context.Background(), db, &jss, `SELECT * FROM trending_js ORDER BY subject, rank`)
 	check(err)
 
-	slog.Info("selected", "rows", len(jss))
+	slog.Info("selected javascript", "rows", len(jss))
 
 	interfaces := make([]interface{}, len(jss))
 	for i, v := range jss {
@@ -375,7 +395,11 @@ func github() {
 	err := pg.Select(context.Background(), db, &ghs, `SELECT * FROM trending_githubs ORDER BY stars DESC`)
 	check(err)
 
-	slog.Info("selected", "rows", len(ghs))
+	slog.Info("selected github", "rows", len(ghs))
+	if len(ghs) == 0 {
+		slog.Warn("no data in trending_githubs")
+		return
+	}
 
 	interfaces := make([]interface{}, len(ghs))
 	for i, v := range ghs {
@@ -411,24 +435,6 @@ func github() {
 		tableString.Reset()
 	}
 	post(messages, nil, githubChannel, "github")
-}
-
-func reduce(arr []interface{}, chunkSize int) [][]interface{} {
-	chunks := make([][]interface{}, 0)
-	chunk := make([]interface{}, 0)
-	for i, item := range arr {
-		chunkIndex := i / chunkSize
-		if chunkIndex >= len(chunks) {
-			chunks = append(chunks, chunk)
-			chunk = make([]interface{}, 0)
-		}
-		chunk = append(chunk, item)
-		chunks[chunkIndex] = chunk
-	}
-	if len(chunk) > 0 {
-		chunks = append(chunks, chunk)
-	}
-	return chunks
 }
 
 func post(messages []string, embed *discordgo.MessageEmbed, channelId string, channelName string) {

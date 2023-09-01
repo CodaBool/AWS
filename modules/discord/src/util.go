@@ -28,3 +28,21 @@ func ShortText(s string, i int) string {
 	}
 	return s[:i+1]
 }
+
+func reduce(arr []interface{}, chunkSize int) [][]interface{} {
+	chunks := make([][]interface{}, 0)
+	chunk := make([]interface{}, 0)
+	for i, item := range arr {
+		chunkIndex := i / chunkSize
+		if chunkIndex >= len(chunks) {
+			chunks = append(chunks, chunk)
+			chunk = make([]interface{}, 0)
+		}
+		chunk = append(chunk, item)
+		chunks[chunkIndex] = chunk
+	}
+	if len(chunk) > 0 {
+		chunks = append(chunks, chunk)
+	}
+	return chunks
+}
