@@ -78,7 +78,7 @@ resource "aws_security_group" "main" {
 
 
 resource "aws_iam_role" "cw_assume" {
-  name_prefix               = "cloudwatch-assume"
+  name_prefix               = "codabool-"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -118,6 +118,11 @@ resource "aws_iam_policy" "retention" {
     Version = "2012-10-17"
     Statement = [{
       Action = "logs:PutRetentionPolicy"
+      Effect   = "Allow"
+      Resource = "*"
+    },
+    {
+      Action = "ssm:*"
       Effect   = "Allow"
       Resource = "*"
     }]
