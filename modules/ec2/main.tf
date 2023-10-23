@@ -31,8 +31,8 @@ resource "aws_instance" "main" {
   subnet_id              = "subnet-02bd6f23bd2e48675" # ipv6
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.main.id]
-  # ipv6_address_count = 1
-  ipv6_addresses         = ["2600:1f18:1248:e300:813:9e07:6f2e:6f7a"]
+  ipv6_address_count = 1
+  # ipv6_addresses         = ["2600:1f18:1248:e300:813:9e07:6f2e:6f7a"]
   iam_instance_profile   = var.name
   tags = {
     Name = "sock_test"
