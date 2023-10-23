@@ -25,34 +25,34 @@
 # }
 
 
-resource "aws_instance" "main" {
-  ami                    = data.aws_ami.image.id
-  instance_type          = var.instance_type
-  subnet_id              = "subnet-02bd6f23bd2e48675" # ipv6
-  key_name               = var.key_name
-  vpc_security_group_ids = [aws_security_group.main.id]
-  ipv6_address_count = 1
-  # ipv6_addresses         = ["2600:1f18:1248:e300:813:9e07:6f2e:6f7a"]
-  iam_instance_profile   = var.name
-  tags = {
-    Name = "sock_test"
-  }
-}
-
-
-# max price to request, use aws ec2 describe-spot-price-history
-# data "external" "lowest_price" {
-#   program = ["bash", "${path.module}/price.sh", var.instance_type]
+# resource "aws_instance" "main" {
+#   ami                    = data.aws_ami.image.id
+#   instance_type          = var.instance_type
+#   subnet_id              = "subnet-02bd6f23bd2e48675" # ipv6
+#   key_name               = var.key_name
+#   vpc_security_group_ids = [aws_security_group.main.id]
+#   ipv6_address_count = 1
+#   ipv6_addresses         = ["2600:1f18:1248:e300:813:9e07:6f2e:6f7a"]
+#   iam_instance_profile   = var.name
+#   tags = {
+#     Name = "sock_test"
+#   }
 # }
 
-data "aws_ami" "image" {
-  most_recent = true
-  owners = ["self"]
-  filter {
-    name = "tag:Name"
-    values = ["${var.name}*"]
-  }
-}
+
+# # max price to request, use aws ec2 describe-spot-price-history
+# # data "external" "lowest_price" {
+# #   program = ["bash", "${path.module}/price.sh", var.instance_type]
+# # }
+
+# data "aws_ami" "image" {
+#   most_recent = true
+#   owners = ["self"]
+#   filter {
+#     name = "tag:Name"
+#     values = ["${var.name}*"]
+#   }
+# }
 
 # resource "aws_eip" "main" {
 #   instance = aws_instance.main.id
