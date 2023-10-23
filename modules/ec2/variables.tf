@@ -11,9 +11,9 @@ variable "ssh_ip" {
   type    = string
 }
 
-variable "app_ports" {
-  type    = list(number)
-}
+# variable "app_ports" {
+#   type    = list(number)
+# }
 
 variable "instance_type" {
   type    = string

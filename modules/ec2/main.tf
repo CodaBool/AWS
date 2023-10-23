@@ -33,7 +33,7 @@ resource "aws_instance" "main" {
   vpc_security_group_ids = [aws_security_group.main.id]
   # ipv6_address_count = 1
   ipv6_addresses         = ["2600:1f18:1248:e300:813:9e07:6f2e:6f7a"]
-  iam_instance_profile   = "sock"
+  iam_instance_profile   = var.name
   tags = {
     Name = "sock_test"
   }
@@ -70,27 +70,29 @@ data "aws_vpc" "default" {
 
 resource "aws_security_group" "main" {
   name_prefix   = "${var.name}-"
-  vpc_id = aws_default_vpc.default.id
-  dynamic "ingress" {
-    for_each = var.app_ports
-    content {
-      from_port   = ingress.value
-      to_port     = ingress.value
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-    }
-  }
+  vpc_id = data.aws_vpc.default.id
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["${var.ssh_ip}/32"]
   }
+  ingress {
+    # from_port   = 0
+    # to_port     = 0
+    # protocol    = "-1"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    ipv6_cidr_blocks = ["::/0"]
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    # cidr_blocks = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
   }
 }
 
