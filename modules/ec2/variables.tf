@@ -11,6 +11,13 @@ variable "ssh_ip" {
   type    = string
 }
 
+variable "ip" {
+  type    = string
+}
+variable "subnet" {
+  type    = string
+}
+
 # variable "app_ports" {
 #   type    = list(number)
 # }
