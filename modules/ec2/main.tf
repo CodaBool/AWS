@@ -69,7 +69,7 @@ data "aws_vpc" "default" {
 # }
 
 resource "aws_security_group" "main" {
-  name_prefix   = "${var.name}-"
+  name        = var.name
   vpc_id = data.aws_vpc.default.id
   ingress {
     from_port   = 22
@@ -94,11 +94,14 @@ resource "aws_security_group" "main" {
     # cidr_blocks = ["0.0.0.0/0"]
     ipv6_cidr_blocks = ["::/0"]
   }
+  tags = {
+    Name = var.name
+  }
 }
 
 
 resource "aws_iam_role" "cw_assume" {
-  name_prefix               = "${var.name}-"
+  name = var.name
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
