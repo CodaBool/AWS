@@ -12,61 +12,36 @@
 #   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
 # }
 
-# resource "aws_instance" "main" {
-#   ami                    = data.aws_ami.image.id
-#   instance_type = var.instance_type
-#   subnet_id              = aws_default_subnet.a.id
-#   key_name               = var.key_name
-#   vpc_security_group_ids = [aws_security_group.main.id]
-#   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
-#   tags = {
-#     Name = var.name
-#   }
+resource "aws_instance" "main" {
+  ami                    = data.aws_ami.image.id
+  instance_type          = var.instance_type
+  subnet_id              = "subnet-02bd6f23bd2e48675" # ipv6
+  key_name               = var.key_name
+  vpc_security_group_ids = [aws_security_group.main.id]
+  ipv6_addresses         = ["2600:1f18:1248:e300:813:9e07:6f2e:6f7a"]
+  iam_instance_profile   = var.name
+  tags = {
+    Name = var.name
+  }
+}
+
+# max price to request, use aws ec2 describe-spot-price-history
+# data "external" "lowest_price" {
+#   program = ["bash", "${path.module}/price.sh", var.instance_type]
 # }
 
-
-# resource "aws_instance" "main" {
-#   ami                    = data.aws_ami.image.id
-#   instance_type          = var.instance_type
-#   subnet_id              = "subnet-02bd6f23bd2e48675" # ipv6
-#   key_name               = var.key_name
-#   vpc_security_group_ids = [aws_security_group.main.id]
-#   ipv6_address_count = 1
-#   ipv6_addresses         = ["2600:1f18:1248:e300:813:9e07:6f2e:6f7a"]
-#   iam_instance_profile   = var.name
-#   tags = {
-#     Name = "sock_test"
-#   }
-# }
-
-
-# # max price to request, use aws ec2 describe-spot-price-history
-# # data "external" "lowest_price" {
-# #   program = ["bash", "${path.module}/price.sh", var.instance_type]
-# # }
-
-# data "aws_ami" "image" {
-#   most_recent = true
-#   owners = ["self"]
-#   filter {
-#     name = "tag:Name"
-#     values = ["${var.name}*"]
-#   }
-# }
-
-# resource "aws_eip" "main" {
-#   instance = aws_instance.main.id
-# }
+data "aws_ami" "image" {
+  most_recent = true
+  owners = ["self"]
+  filter {
+    name = "tag:Name"
+    values = ["${var.name}*"]
+  }
+}
 
 data "aws_vpc" "default" {
   default = true
 }
-# aws_default_vpc.default.cidr_block
-
-# NOTE: different subnets have different spot prices
-# resource "aws_default_subnet" "a" {
-#   availability_zone = "us-east-1a"
-# }
 
 resource "aws_security_group" "main" {
   name        = var.name
@@ -75,7 +50,7 @@ resource "aws_security_group" "main" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    ipv6_cidr_blocks = [var.ssh_ip]
+    ipv6_cidr_blocks = [var.ssh_ip] # must be ipv6 ending in /128
   }
   ingress {
     from_port   = 80
@@ -130,6 +105,7 @@ resource "aws_iam_role_policy_attachment" "retention" {
   policy_arn = aws_iam_policy.retention.arn
 }
 
+# could rm ssm, ssm-agent requires ipv4
 resource "aws_iam_policy" "retention" {
   name_prefix        = "change_retention"
   policy = jsonencode({
