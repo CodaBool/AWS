@@ -12,17 +12,33 @@
 #   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
 # }
 
+# resource "aws_instance" "main" {
+#   ami                    = data.aws_ami.image.id
+#   instance_type = var.instance_type
+#   subnet_id              = aws_default_subnet.a.id
+#   key_name               = var.key_name
+#   vpc_security_group_ids = [aws_security_group.main.id]
+#   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+#   tags = {
+#     Name = var.name
+#   }
+# }
+
+
 resource "aws_instance" "main" {
   ami                    = data.aws_ami.image.id
-  instance_type = var.instance_type
-  subnet_id              = aws_default_subnet.a.id
+  instance_type          = var.instance_type
+  subnet_id              = "subnet-02bd6f23bd2e48675" # ipv6
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.main.id]
-  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  # ipv6_address_count = 1
+  ipv6_addresses         = ["2600:1f18:1248:e300:813:9e07:6f2e:6f7a"]
+  iam_instance_profile   = "sock"
   tags = {
-    Name = var.name
+    Name = "sock_test"
   }
 }
+
 
 # max price to request, use aws ec2 describe-spot-price-history
 # data "external" "lowest_price" {
@@ -38,20 +54,22 @@ data "aws_ami" "image" {
   }
 }
 
-resource "aws_eip" "main" {
-  instance = aws_instance.main.id
-}
+# resource "aws_eip" "main" {
+#   instance = aws_instance.main.id
+# }
 
-resource "aws_default_vpc" "default" {}
+data "aws_vpc" "default" {
+  default = true
+}
 # aws_default_vpc.default.cidr_block
 
 # NOTE: different subnets have different spot prices
-resource "aws_default_subnet" "a" {
-  availability_zone = "us-east-1a"
-}
+# resource "aws_default_subnet" "a" {
+#   availability_zone = "us-east-1a"
+# }
 
 resource "aws_security_group" "main" {
-  name_prefix   = var.name
+  name_prefix   = "${var.name}-"
   vpc_id = aws_default_vpc.default.id
   dynamic "ingress" {
     for_each = var.app_ports
@@ -78,7 +96,7 @@ resource "aws_security_group" "main" {
 
 
 resource "aws_iam_role" "cw_assume" {
-  name_prefix               = "codabool-"
+  name_prefix               = "${var.name}-"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
