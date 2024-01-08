@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +23,7 @@ func scrapeUpcomingMovies() {
 				if el.Text != "" {
 					releaseTime, err := time.Parse("Jan 2, 2006", release)
 					check(err)
+					slog.Debug(fmt.Sprintf("INDEX ISSUE, get title from text %s", el.Text))
 					data = append(data, UpcomingMovie{
 						Release: releaseTime,
 						Title:   el.Text[:len(el.Text)-7],
@@ -33,7 +35,7 @@ func scrapeUpcomingMovies() {
 	c.OnError(func(_ *colly.Response, err error) { check(err) })
 	c.Visit("https://www.imdb.com/calendar/?region=US&type=MOVIE")
 	db.Exec("DELETE FROM upcoming_movies")
-	slog.Info(fmt.Sprintf("+%d upcoming movies", len(data)))
+	slog.Info(fmt.Sprintf("+%s upcoming movies", strconv.Itoa(len(data))))
 	db.Create(data)
 }
 
@@ -56,8 +58,10 @@ func scrapeTV() {
 				sign = "+"
 			}
 			vel := el.DOM.Find(".meter-const-ranking").Text()
+			slog.Debug(fmt.Sprintf("INDEX ISSUE (TV), get velocity from %s", vel))
 			vel = strings.Split(vel, "(")[1]
 			vel = strings.Split(vel, ")")[0]
+			slog.Debug(fmt.Sprintf("INDEX ISSUE (TV), final velocity %s", vel))
 			if vel == "" {
 				sign = ""
 				vel = "no change"
@@ -78,11 +82,13 @@ func scrapeTV() {
 						sign = "-"
 					}
 					vel := strings.ReplaceAll(e.DOM.Find(".velocity").Text(), "\n", "")
+					slog.Debug(fmt.Sprintf("INDEX ISSUE 2, get velocity from %s", vel))
 					vel = strings.Split(vel, "(")[1]
 					if vel == "no change)" {
 						sign = ""
 						vel = "0)"
 					}
+					slog.Debug(fmt.Sprintf("INDEX ISSUE 3, get velocity from %s at %d", vel, len(vel)-1))
 					data2 = append(data2, TrendingTV{
 						Title:    el.Text,
 						Rank:     i,
@@ -97,7 +103,7 @@ func scrapeTV() {
 	c.Visit("https://www.imdb.com/chart/tvmeter")
 	db.Exec("DELETE FROM trending_tvs")
 	log.Print("new site scraped data = ", len(data), " | old site scraped data = ", len(data2))
-	slog.Info(fmt.Sprintf("+%d tv", len(data)+len(data2)))
+	slog.Info(fmt.Sprintf("+%s tv", strconv.Itoa(len(data)+len(data2))))
 	if len(data) > len(data2) {
 		db.Create(data)
 	} else {
@@ -123,8 +129,10 @@ func scrapeTrendingMovies() {
 				sign = "+"
 			}
 			vel := el.DOM.Find(".meter-const-ranking").Text()
+			slog.Debug(fmt.Sprintf("INDEX ISSUE (movies), get velocity from %s", vel))
 			vel = strings.Split(vel, "(")[1]
 			vel = strings.Split(vel, ")")[0]
+			slog.Debug(fmt.Sprintf("INDEX ISSUE (movies), final velocity %s", vel))
 			if vel == "" {
 				sign = ""
 				vel = "no change"
@@ -147,11 +155,13 @@ func scrapeTrendingMovies() {
 						sign = "-"
 					}
 					vel := strings.ReplaceAll(ele.DOM.Find(".velocity").Text(), "\n", "")
+					slog.Debug(fmt.Sprintf("INDEX ISSUE (POP MOVIES), get velocity from %s", vel))
 					vel = strings.Split(vel, "(")[1]
 					if vel == "no change)" {
 						sign = ""
 						vel = "0)"
 					}
+					slog.Debug(fmt.Sprintf("INDEX ISSUE (POP MOVIES), get velocity from %s at %d", vel, len(vel)-1))
 					tempData.Velocity = sign + vel[:len(vel)-1]
 					tempData.Rank = j + 1
 					tempData.Title = ele.DOM.Children().First().Text()
@@ -168,7 +178,7 @@ func scrapeTrendingMovies() {
 
 	// again a split on site version means idk which data slice will have data
 	log.Print("new site scraped data = ", len(data), " | old site scraped data = ", len(data2))
-	slog.Info(fmt.Sprintf("+%d trending movies", len(data)+len(data2)))
+	slog.Info(fmt.Sprintf("+%s trending movies", strconv.Itoa(len(data)+len(data2))))
 	if len(data) > len(data2) {
 		db.Create(data)
 	} else {

@@ -68,8 +68,11 @@ func scrapeSummary(packages []TrendingPY) {
 	c.SetRequestTimeout(900 * time.Second)
 	c.OnHTML("section", func(e *colly.HTMLElement) {
 		summary := e.DOM.Children().Eq(2).Text()
+		slog.Debug(fmt.Sprintf("INDEX ISSUE (PY), summary = [%s]", strings.Split(summary, "Summary:")))
 		summary = strings.Split(summary, "Summary:")[1]
+		slog.Debug(fmt.Sprintf("INDEX ISSUE (PY), version = [%s]", strings.Split(summary, "Latest version:")))
 		summary = strings.Split(summary, "Latest version:")[0]
+		slog.Debug(fmt.Sprintf("INDEX ISSUE (PY), package = [%s]", strings.Split(fmt.Sprintf("%v", e.Request.URL), "packages/")))
 		packageName := strings.Split(fmt.Sprintf("%v", e.Request.URL), "packages/")[1]
 		for _, p := range packages {
 			if p.Name == packageName {

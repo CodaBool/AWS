@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -29,6 +30,7 @@ func scrapeLibhunt() []TrendingGo {
 		e.ForEach("li", func(i int, e *colly.HTMLElement) {
 			href := e.ChildAttr("a", "href")
 			splits := strings.Split(href, "/")
+			slog.Debug(fmt.Sprintf("[%s] INDEX ISSUE split string", strings.Join(splits, ", ")))
 			libData = append(libData, TrendingGo{
 				Name:        strings.ToLower(strings.TrimSpace(e.ChildText("h3"))),
 				FullName:    splits[3] + "/" + splits[4],
@@ -95,6 +97,7 @@ func scrapeGo() {
 				log.Println(keyLIB, " match ", valLIB.Name)
 				matchCount++
 				found = true
+				slog.Debug(fmt.Sprintf("%d INDEX ISSUE key", keyLIB))
 				libData[keyLIB].Stars = valGH.Stars
 			}
 		}
@@ -125,6 +128,6 @@ func scrapeGo() {
 	log.Println("matched ", matchCount, "/", len(libData))
 
 	db.Exec("DELETE FROM trending_gos")
-	slog.Info("+%d go", len(libData))
+	slog.Info(fmt.Sprintf("+%s go", strconv.Itoa(len(libData))))
 	db.Create(libData)
 }

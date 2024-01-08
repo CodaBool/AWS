@@ -3,3 +3,8 @@ use `aws --region=us-east-1 ec2 describe-spot-price-history --instance-types t4g
 
 #### Find latest al2 ami
 - `aws ec2 describe-images --owners amazon --filters "Name=name,Values=amzn*" "Name=architecture,Values=arm64" --query 'sort_by(Images, &CreationDate)[-1].ImageId' --output text`
+
+
+# TODO
+- look into new metadata
+- look into better monitoring setting
