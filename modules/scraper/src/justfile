@@ -8,3 +8,10 @@ run: build
   -e AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-''} \
   --env-file ./.env \
   scraper
+
+# docker login no longer needed with ecr cred helper
+# aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 919759177803.dkr.ecr.us-east-1.amazonaws.com
+publish:
+  docker build -t scraper .
+  docker tag scraper:latest 919759177803.dkr.ecr.us-east-1.amazonaws.com/scraper:latest
+  docker push 919759177803.dkr.ecr.us-east-1.amazonaws.com/scraper:latest
