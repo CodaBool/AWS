@@ -1,0 +1,22 @@
+{
+  "name": "scraper",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": "./main.js",
+  "scripts": {
+    "start": "node main.js",
+    "local": "node main.js -t"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "as-table": "^1.0.55",
+    "axios": "^1.2.1",
+    "dotenv": "^16.0.3",
+    "jsdom": "^20.0.3",
+    "pg": "^8.8.0",
+    "pg-format": "^1.0.4",
+    "pypi-info": "^2.5.0"
+  }
+}

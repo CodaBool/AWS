@@ -1,0 +1,36 @@
+set positional-arguments
+
+build:
+  docker build -t scraper:latest .
+
+run: build
+  # Make sure you ran awsume for your account
+  docker run \
+  -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+  -e AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-''} \
+  -e AWS_LAMBDA_FUNCTION_TIMEOUT=900 \
+  -v /mnt/d/Code/aws/terraform/modules/scraper/shared:/shared \
+  --env-file ./.env \
+  -p 9000:8080 \
+  --rm --name scraper \
+  scraper:latest
+
+# AVAILABLE ENDPOINTS
+# - github
+# - upcoming_movies
+# - trending_movies
+# - tv
+# - games
+# - npm
+# - pypi
+# - go
+
+read endpoint:
+  curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d "{\"path\": \"/v1/$1\",\"queryStringParameters\": {\"limit\": \"50\"}}"
+
+write endpoint:
+  curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d "{\"path\": \"/v1/$1\",\"queryStringParameters\": {\"key\": \"GyGx3WJNiLthKUEpb4NUsVBuRbaVAW8pjRXReLNG\"}}"
+
+clean:
+  docker rm scraper

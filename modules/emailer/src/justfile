@@ -1,0 +1,19 @@
+build:
+  docker build -t emailer .
+
+run: build
+  docker run \
+  -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+  -e AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-''} \
+  -e AWS_LAMBDA_FUNCTION_TIMEOUT=900 \
+  --env-file ./.env \
+  -p 9000:8080 \
+  --rm --name emailer \
+  emailer
+
+upload:
+  aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 919759177803.dkr.ecr.us-east-1.amazonaws.com
+  docker build -t emailer .
+  docker tag emailer:latest 919759177803.dkr.ecr.us-east-1.amazonaws.com/emailer:latest
+  docker push 919759177803.dkr.ecr.us-east-1.amazonaws.com/emailer:latest

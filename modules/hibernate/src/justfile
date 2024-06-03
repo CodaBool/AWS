@@ -1,0 +1,25 @@
+build:
+  docker build -t hibernate .
+
+run: build
+  docker run \
+  -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+  -e AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-''} \
+  -e AWS_REGION=${AWS_REGION:-'us-east-1'} \
+  -e AWS_LAMBDA_FUNCTION_TIMEOUT=900 \
+  -p 9000:8080 \
+  --rm --name hibernate \
+  hibernate
+
+upload:
+  aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 919759177803.dkr.ecr.us-east-1.amazonaws.com
+  docker build -t hibernate .
+  docker tag hibernate:latest 919759177803.dkr.ecr.us-east-1.amazonaws.com/hibernate:latest
+  docker push 919759177803.dkr.ecr.us-east-1.amazonaws.com/hibernate:latest
+
+start:
+  aws ec2 start-instances --instance-ids i-06e291822e060d46f
+
+stop:
+  aws ec2 stop-instances --instance-ids i-06e291822e060d46f

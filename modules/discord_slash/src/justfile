@@ -1,0 +1,20 @@
+build:
+  docker build -t discord_slash:latest .
+
+run: build
+  # Make sure you ran awsume for your account
+  docker run \
+  -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+  -e AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-''} \
+  -e AWS_LAMBDA_FUNCTION_TIMEOUT=900 \
+  --env-file ./.env \
+  -p 9000:8080 \
+  --rm --name discord_slash \
+  discord_slash:latest
+
+test:
+  curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d "{}"
+
+clean:
+  docker rm discord_slash
