@@ -43,6 +43,8 @@ func scrapeGithub() {
 		return true
 	})
 	db.Exec("DELETE FROM trending_githubs")
-	slog.Info(fmt.Sprintf("+%d github", len(data)))
-	db.Create(data)
+	slog.Info(fmt.Sprintf("scraped %d github", len(data)))
+	result := db.Create(data)
+	slog.Info(fmt.Sprintf("inserted %d github", result.RowsAffected))
+	check(result.Error)
 }

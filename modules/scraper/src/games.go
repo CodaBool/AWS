@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 
@@ -33,12 +32,12 @@ func scrapeGames() {
 			price := e.DOM.Find(".discount_final_price").Text()
 			price = strings.TrimSpace(price)
 
-			log.Println("price", price, "title", title, "msrp", msrp)
+			// log.Println("price", price, "title", title, "msrp", msrp)
 
 			if msrp == "" {
 				msrp = price
 				if price == "" {
-					log.Println("")
+					// log.Println("")
 					msrp = "Free"
 					price = "Free"
 				}
@@ -62,6 +61,8 @@ func scrapeGames() {
 	c.OnError(func(_ *colly.Response, err error) { check(err) })
 	c.Visit("https://store.steampowered.com/search/?filter=topsellers")
 	db.Exec("DELETE FROM trending_games")
-	slog.Info(fmt.Sprintf("+%d games", len(data)))
-	db.Create(data)
+	slog.Info(fmt.Sprintf("scraped %d games", len(data)))
+	result := db.Create(data)
+	slog.Info(fmt.Sprintf("inserted %d games", result.RowsAffected))
+	check(result.Error)
 }

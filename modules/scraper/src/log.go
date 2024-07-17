@@ -27,9 +27,11 @@ func buildLogger(debug bool, verbose bool, local bool) {
 		ReplaceAttr: func(groups []string, a log.Attr) log.Attr {
 			if a.Key == log.TimeKey {
 				// a.Value = slog.StringValue(a.Value.Time().Format("2006/01/02 15:04:05"))
-				if !verbose {
-					return log.Attr{}
-				}
+				// if !verbose {
+				// 	// a.Value = log.StringValue(" " + a.Value.Time().Format("2006/01/02 15:04:05"))
+				// 	return log.Attr{}
+				// }
+				return log.Attr{}
 			} else if a.Key == log.SourceKey {
 				source := a.Value.Any().(*log.Source)
 				a.Value = log.StringValue(source.Function + ":" + strconv.Itoa(source.Line))
@@ -54,7 +56,7 @@ func buildLogger(debug bool, verbose bool, local bool) {
 				return log.Attr{}
 			} else if a.Key == log.MessageKey {
 				if local {
-					fmt.Print(a.Value)
+					fmt.Print(a.Value, " ")
 					return log.Attr{}
 				}
 			}

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
@@ -38,13 +37,15 @@ func scrapeJS() {
 	// for page := 0; page < 2; page++ {
 	for _, subject := range []string{"backend", "front-end", "cli", "framework"} {
 		// log.Print("page ", page, ", ", subject)s
-		log.Print(subject)
+		slog.Debug(fmt.Sprintf("section %s", subject))
 		// c.Visit("https://www.npmjs.com/search?ranking=popularity&page=" + strconv.Itoa(page) + "&q=keywords%3A" + subject)
 		c.Visit("https://www.npmjs.com/search?ranking=popularity&page=0&q=keywords%3A" + subject)
 	}
 	// }
 	c.Wait()
 	db.Exec("DELETE FROM trending_js")
-	slog.Info(fmt.Sprintf("+%d js", len(data)))
-	db.Create(data)
+	slog.Info(fmt.Sprintf("scraped %d js", len(data)))
+	result := db.Create(data)
+	slog.Info(fmt.Sprintf("inserted %d js", result.RowsAffected))
+	check(result.Error)
 }

@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -31,8 +29,20 @@ func scrapeLibhunt() []TrendingGo {
 			// href := e.ChildAttr("a", "href")
 			// splits := strings.Split(href, "/")
 			slog.Debug(fmt.Sprintf("name %s", e.ChildText("h3")))
+			name := strings.ReplaceAll(strings.ToLower(strings.TrimSpace(e.ChildText("h3"))), " ", "-")
+			fullName := name
+			if e.ChildAttr("a[target='_blank']", "href") != "" {
+				// slog.Info(fmt.Sprintf("anchor with target=_blank found: %s", e.ChildAttr("a[target='_blank']", "href")))
+
+				href := e.ChildAttr("a[target='_blank']", "href")
+				splits := strings.Split(href, "/")
+				// slog.Info(fmt.Sprintf("splits: %v", splits))
+				// slog.Info(fmt.Sprintf("repo: %s/%s", splits[3], splits[4]))
+				fullName = splits[3] + "/" + splits[4]
+			}
 			libData = append(libData, TrendingGo{
-				Name:        strings.ToLower(strings.TrimSpace(e.ChildText("h3"))),
+				Name:     name,
+				FullName: fullName,
 				// FullName:    splits[3] + "/" + splits[4],
 				// Href:        href,
 				Description: strings.TrimSpace(e.ChildText(".tagline")),
@@ -41,7 +51,7 @@ func scrapeLibhunt() []TrendingGo {
 	})
 
 	c.OnError(func(_ *colly.Response, err error) {
-		check(err)
+		slog.Error(fmt.Sprintf("go error: %s", err.Error()))
 	})
 
 	for page := 1; page < 5; page++ {
@@ -58,15 +68,18 @@ func scrapeGo() {
 	var ghData []TrendingGo
 	client := &http.Client{Timeout: 9 * time.Second}
 	for page := 1; page < 5; page++ {
-		log.Println("scraping page ", page, " of go repos")
-		time.Sleep(6 * time.Second)
+		slog.Info(fmt.Sprintf("scraping page %d of go repos", page))
+		time.Sleep(4 * time.Second)
 		req, err := http.NewRequest(http.MethodGet, "https://api.github.com/search/repositories?q=language:golang&stars:%3E1&sort=stars&order=desc&per_page=100&page="+strconv.Itoa(page), nil)
 		check(err)
 		req.Header.Add("Authorization", os.Getenv("GIT_TOKEN"))
+		req.Header.Add("X-GitHub-Api-Version", "2022-11-28")
+		req.Header.Add("Accept", "application/vnd.github+json")
 		res, err := client.Do(req)
+		slog.Info(fmt.Sprintf("HTTP code: %d", res.StatusCode))
 		check(err)
 		defer res.Body.Close()
-		body, err := ioutil.ReadAll(res.Body)
+		body, err := io.ReadAll(res.Body)
 		check(err)
 
 		gjson.GetBytes(body, "items").ForEach(func(_, item gjson.Result) bool {
@@ -85,7 +98,6 @@ func scrapeGo() {
 			return true
 		})
 	}
-
 	libData := scrapeLibhunt()
 
 	matchCount := 0
@@ -94,7 +106,7 @@ func scrapeGo() {
 		found := false
 		for _, valGH := range ghData {
 			if valGH.Name == valLIB.Name {
-				log.Println(keyLIB, " match ", valLIB.Name)
+				slog.Info(fmt.Sprintf("%d match %s", keyLIB, valLIB.Name))
 				matchCount++
 				found = true
 				slog.Debug(fmt.Sprintf("%d/119 fetching stars", keyLIB))
@@ -102,21 +114,40 @@ func scrapeGo() {
 			}
 		}
 		if !found {
-			log.Println(keyLIB, " no match ", valLIB.Name)
-			time.Sleep(6 * time.Second)
-			req, err := http.NewRequest(http.MethodGet, "https://api.github.com/search/repositories?q="+valLIB.FullName, nil)
+			slog.Info(fmt.Sprintf("%d no match %s, using github api for stars", keyLIB, valLIB.Name))
+			// log.Println(keyLIB, " no match ", valLIB.Name)
+			time.Sleep(15 * time.Second)
+			q := valLIB.Name
+			if valLIB.FullName != "" {
+				q = valLIB.FullName
+			}
+			q = strings.ReplaceAll(q, " ", " ")
+			req, err := http.NewRequest(http.MethodGet, "https://api.github.com/search/repositories?q="+q, nil)
 			check(err)
 			req.Header.Add("Authorization", os.Getenv("GIT_TOKEN"))
+			req.Header.Add("X-GitHub-Api-Version", "2022-11-28")
+			req.Header.Add("Accept", "application/vnd.github+json")
 			res, err := client.Do(req)
+			slog.Info(fmt.Sprintf("HTTP code: %d", res.StatusCode))
 			check(err)
 			defer res.Body.Close()
 			body, err := io.ReadAll(res.Body)
 			check(err)
 
+			if res.StatusCode == 422 {
+				slog.Error("likely rate limited")
+			} else if res.StatusCode == 422 {
+				slog.Error("bad token or rate limited")
+			}
+
+			// slog.Info(fmt.Sprintf("Response Body: %s", string(body)))
+
 			gjson.GetBytes(body, "items").ForEach(func(i, item gjson.Result) bool {
 				item.ForEach(func(key, val gjson.Result) bool {
 					if key.String() == "stargazers_count" {
-						log.Println("  stars = ", val.Int())
+						// log.Println("  stars = ", val.Int())
+						slog.Info(fmt.Sprintf("  stars = %d", val.Int()))
+
 						libData[keyLIB].Stars = val.Int()
 					}
 					return true
@@ -125,9 +156,12 @@ func scrapeGo() {
 			})
 		}
 	}
-	log.Println("matched ", matchCount, "/", len(libData))
+	slog.Info(fmt.Sprintf("matched %d/%d", matchCount, len(libData)))
 
 	db.Exec("DELETE FROM trending_gos")
-	slog.Info(fmt.Sprintf("+%s go", strconv.Itoa(len(libData))))
-	db.Create(libData)
+	slog.Info(fmt.Sprintf("attempting insert of +%s go rows", strconv.Itoa(len(libData))))
+
+	result := db.Create(libData) // pass pointer of data to Create
+	slog.Info(fmt.Sprintf("rows: %d", result.RowsAffected))
+	check(result.Error)
 }

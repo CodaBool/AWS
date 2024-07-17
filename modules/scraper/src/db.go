@@ -11,8 +11,8 @@ import (
 )
 
 type TrendingGo struct {
-	Name        string
-	Href        string
+	Name string
+	// Href        string
 	FullName    string
 	Stars       int64
 	Description string
@@ -93,13 +93,4 @@ func dbInit(migrate bool) {
 	if migrate {
 		db.AutoMigrate(&TrendingGo{}, &TrendingGithub{}, &TrendingTV{}, &UpcomingMovie{}, &TrendingGame{}, &TrendingJS{}, &TrendingPY{}, &TrendingMovie{})
 	}
-}
-
-func upload(table string, data []any) {
-	slog.Info("Clearing previous trending go data")
-	db.Exec("DELETE FROM " + table)
-
-	slog.Info("Inserting data")
-	result := db.Create(data)
-	check(result.Error)
 }

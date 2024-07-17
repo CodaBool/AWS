@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -28,7 +27,7 @@ func scrapePY(skipDesc bool) {
 	check(err)
 
 	gjson.GetBytes(body, "rows").ForEach(func(index gjson.Result, item gjson.Result) bool {
-		if index.Int() == 100 {
+		if index.Int() == 101 {
 			return false
 		}
 		var project TrendingPY
@@ -40,14 +39,20 @@ func scrapePY(skipDesc bool) {
 			}
 			return true
 		})
+		if project.Name == "pypular" {
+			slog.Debug("exception skip on pypular, it always gives a 500")
+			return true
+		}
 		data = append(data, project)
 		return true
 	})
 
 	if skipDesc {
 		db.Exec("DELETE FROM trending_pies")
-		slog.Info(fmt.Sprintf("+%d short py", len(data)))
-		db.Create(data)
+		slog.Info(fmt.Sprintf("scraped %d py", len(data)))
+		result := db.Create(data)
+		slog.Info(fmt.Sprintf("inserted %d py", result.RowsAffected))
+		check(result.Error)
 	} else {
 		slog.Info(fmt.Sprintf("fetching desc for %d .py packages (est. 2 minutes)", len(data)))
 		scrapeSummary(data)
@@ -68,7 +73,7 @@ func scrapeSummary(packages []TrendingPY) {
 	c.SetRequestTimeout(900 * time.Second)
 	c.OnHTML("section", func(e *colly.HTMLElement) {
 		summary := e.DOM.Children().Eq(2).Text()
-		slog.Debug(fmt.Sprintf("PY, summary = [%s]", strings.Split(summary, "Summary:")))
+		// slog.Debug(fmt.Sprintf("PY, summary = [%s]", strings.Split(summary, "Summary:")))
 		summary = strings.Split(summary, "Summary:")[1]
 		// slog.Debug(fmt.Sprintf("PY, version = [%s]", strings.Split(summary, "Latest version:")))
 		summary = strings.Split(summary, "Latest version:")[0]
@@ -76,7 +81,7 @@ func scrapeSummary(packages []TrendingPY) {
 		packageName := strings.Split(fmt.Sprintf("%v", e.Request.URL), "packages/")[1]
 		for _, p := range packages {
 			if p.Name == packageName {
-				log.Print("+", p.Name)
+				slog.Debug(fmt.Sprintf("adding package %s", p.Name))
 				newData = append(newData, TrendingPY{
 					Description: strings.TrimSpace(summary),
 					Name:        p.Name,
@@ -86,12 +91,15 @@ func scrapeSummary(packages []TrendingPY) {
 		}
 	})
 	c.OnError(func(r *colly.Response, err error) {
-		check(err)
+		slog.Error(fmt.Sprintf("python error: %s", err.Error()))
 	})
 	for _, p := range packages {
+		slog.Info(fmt.Sprintf("fetch description for py %s", p.Name))
 		c.Visit("https://www.pypistats.org/packages/" + p.Name)
 	}
-	slog.Info(fmt.Sprintf("+%d long py", len(newData)))
+	slog.Info(fmt.Sprintf("scraped %d py", len(newData)))
 	db.Exec("DELETE FROM trending_pies")
-	db.Create(newData)
+	result := db.Create(newData)
+	slog.Info(fmt.Sprintf("inserted %d py", result.RowsAffected))
+	check(result.Error)
 }

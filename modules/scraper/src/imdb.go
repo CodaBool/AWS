@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gocolly/colly"
+	"gorm.io/gorm"
 )
 
 func scrapeUpcomingMovies() {
@@ -35,8 +34,10 @@ func scrapeUpcomingMovies() {
 	c.OnError(func(_ *colly.Response, err error) { check(err) })
 	c.Visit("https://www.imdb.com/calendar/?region=US&type=MOVIE")
 	db.Exec("DELETE FROM upcoming_movies")
-	slog.Info(fmt.Sprintf("+%s upcoming movies", strconv.Itoa(len(data))))
-	db.Create(data)
+	slog.Info(fmt.Sprintf("scraped %d upcoming movies", len(data)))
+	result := db.Create(data)
+	slog.Info(fmt.Sprintf("inserted %d upcoming movies", result.RowsAffected))
+	check(result.Error)
 }
 
 func scrapeTV() {
@@ -102,13 +103,16 @@ func scrapeTV() {
 	c.OnError(func(_ *colly.Response, err error) { check(err) })
 	c.Visit("https://www.imdb.com/chart/tvmeter")
 	db.Exec("DELETE FROM trending_tvs")
-	log.Print("new site scraped data = ", len(data), " | old site scraped data = ", len(data2))
-	slog.Info(fmt.Sprintf("+%s tv", strconv.Itoa(len(data)+len(data2))))
+	slog.Info(fmt.Sprintf("new site scraped = %d | old site scraped = %d", len(data), len(data2)))
+	// slog.Info(fmt.Sprintf("+%s tv", strconv.Itoa(len(data)+len(data2))))
+	var result *gorm.DB
 	if len(data) > len(data2) {
-		db.Create(data)
+		result = db.Create(data)
 	} else {
-		db.Create(data2)
+		result = db.Create(data2)
 	}
+	slog.Info(fmt.Sprintf("inserted %d tv", result.RowsAffected))
+	check(result.Error)
 }
 
 func scrapeTrendingMovies() {
@@ -177,11 +181,15 @@ func scrapeTrendingMovies() {
 	db.Exec("DELETE FROM trending_movies")
 
 	// again a split on site version means idk which data slice will have data
-	log.Print("new site scraped data = ", len(data), " | old site scraped data = ", len(data2))
-	slog.Info(fmt.Sprintf("+%s trending movies", strconv.Itoa(len(data)+len(data2))))
+	slog.Info(fmt.Sprintf("new site scraped = %d | old site scraped = %d", len(data), len(data2)))
+	slog.Info(fmt.Sprintf("scraped %d trending movies", len(data)+len(data2)))
+
+	var result *gorm.DB
 	if len(data) > len(data2) {
-		db.Create(data)
+		result = db.Create(data)
 	} else {
-		db.Create(data2)
+		result = db.Create(data2)
 	}
+	slog.Info(fmt.Sprintf("inserted %d trending movies", result.RowsAffected))
+	check(result.Error)
 }

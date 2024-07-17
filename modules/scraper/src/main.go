@@ -13,7 +13,7 @@ var wg sync.WaitGroup
 
 func main() {
 	local := os.Getenv("AWS_LAMBDA_FUNCTION_NAME") == ""
-	buildLogger(true, false, local)
+	buildLogger(false, true, local)
 	if local {
 		handle(context.TODO(), nil)
 	} else {
@@ -27,7 +27,7 @@ func handle(ctx context.Context, _ any) (string, error) {
 	go scrapePY(false)        // +100 rows | false = 101 req | true = 1 req
 	go scrapeGames()          // +49  rows | 1 req
 	go scrapeGithub()         // +100 rows | 1 req
-	go scrapeGo()             // +120 rows | 30 req
+	go scrapeGo() // +120 rows | 30 req
 	go scrapeUpcomingMovies() // +171 rows | 1 req
 	go scrapeTV()             // +100 rows | 1 req
 	go scrapeTrendingMovies() // +100 rows | 1 req

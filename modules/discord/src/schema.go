@@ -4,7 +4,6 @@ import "time"
 
 type TrendingGo struct {
 	Name        string
-	Href        string
 	FullName    string
 	Stars       int64
 	Description string

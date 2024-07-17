@@ -253,10 +253,11 @@ func golang() {
 	for i := 0; i < 5; i++ {
 		var scrapeTime time.Time
 		var tbData [][]string
-		for j := 0; j < 20; j++ {
+		for j := 0; j < len(reducedArr[i]); j++ {
 			if s, ok := reducedArr[i][j].(*TrendingGo); ok {
 				stars := strconv.FormatInt(s.Stars/1000, 10) + "k"
-				tbData = append(tbData, []string{stars, s.Name, ShortText(s.Description, 30)})
+				s.Description = strings.ReplaceAll(ShortText(s.Description, 30), "\n", " ")
+				tbData = append(tbData, []string{stars, s.Name, s.Description})
 				scrapeTime = s.UpdatedAt
 			}
 		}
@@ -296,7 +297,7 @@ func python() {
 	for i := 0; i < 5; i++ {
 		var tbData [][]string
 		var scrapeTime time.Time
-		for j := 0; j < 20; j++ {
+		for j := 0; j < len(reducedArr[i]); j++ {
 			if s, ok := reducedArr[i][j].(*TrendingPY); ok {
 				scrapeTime = s.UpdatedAt
 				downloads := strconv.FormatInt(s.Downloads/1000/1000, 10) + "m"
@@ -374,7 +375,7 @@ func javascript() {
 		var subject string
 		var sTime time.Time
 		var tbData [][]string
-		for j := 0; j < 20; j++ {
+		for j := 0; j < len(reducedArr[i]); j++ {
 			if s, ok := reducedArr[i][j].(*TrendingJS); ok {
 				tbData = append(tbData, []string{strconv.Itoa(s.Rank), s.Title, ShortText(s.Description, 30)})
 				subject = s.Subject
