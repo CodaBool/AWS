@@ -13,4 +13,26 @@ export default {
       required: true,
     }],
   },
+  FACTORIO_ADD_TO_ALLOWLIST_COMMAND: {
+    // 'name' must not contain spaces
+    name: 'factorio_allowlist',
+    description: 'add a factorio username to the allowlist',
+    options: [{
+      name: "input",
+      type: 3, // STRING
+      description: "add a factorio username to the allowlist",
+      required: true,
+    }],
+  },
+  FACTORIO_ADMIN_COMMAND: {
+    // 'name' must not contain spaces
+    name: 'factorio_command',
+    description: 'run a factorio console command',
+    options: [{
+      name: "input",
+      type: 3, // STRING
+      description: "run a factorio console command",
+      required: true,
+    }],
+  },
 }

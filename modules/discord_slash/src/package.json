@@ -8,8 +8,8 @@
     "start": "node main.js"
   },
   "dependencies": {
-    "discord-interactions": "^3.4.0",
+    "discord-interactions": "^4.1.0",
     "dotenv": "^16.4.5",
-    "ssh2": "^1.15.0"
+    "ssh2": "^1.16.0"
   }
 }

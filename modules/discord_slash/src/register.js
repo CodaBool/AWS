@@ -16,8 +16,10 @@ if (!process.env.APP_ID) {
 }
 
 /**
- * Register all commands globally.  This can take o(minutes), so wait until
+ * Register all commands globally. This can take o(minutes), so wait until
  * you're sure these are the commands you want.
+ *
+ * https://discord.com/developers/docs/interactions/application-commands
  */
 const url = `https://discord.com/api/v10/applications/${process.env.APP_ID}/commands`
 
