@@ -3,8 +3,10 @@ provider "aws" {
   allowed_account_ids = ["919759177803"]
 }
 
+# terraform = https://github.com/hashicorp/terraform/releases
+# aws provider = https://registry.terraform.io/providers/hashicorp/aws/latest
 terraform {
-  required_version = ">= 1.4.6, < 2.0.0"
+  required_version = ">= 1.10.4, < 2.0.0"
   required_providers {
     aws = {
       version = "< 6.0"
@@ -35,18 +37,17 @@ module "lambda_discord_slash" {
   source = "./modules/discord_slash"
 }
 
-# module "lambda_hibernate" {
-#   source = "./modules/hibernate"
-#   account = data.aws_caller_identity.current.account_id
-# }
+module "lambda_discord_reminder" {
+  source = "./modules/discord_reminder"
+}
 
 module "key" {
-  source = "./modules/key"
+  source   = "./modules/key"
   key_name = "win"
 }
 
 module "actions" {
-  source = "./modules/actions"
+  source  = "./modules/actions"
   account = data.aws_caller_identity.current.account_id
 }
 
