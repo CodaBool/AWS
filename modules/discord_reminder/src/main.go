@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/bwmarrin/discordgo"
 	_ "github.com/joho/godotenv/autoload"
@@ -15,25 +16,47 @@ var dg *discordgo.Session
 
 var channel = "1254921386267250879"
 
-type Input struct {
-	Test bool `json:"test"`
-}
-
 func main() {
 	local := os.Getenv("AWS_LAMBDA_FUNCTION_NAME") == ""
 	buildLogger(true, false, local)
 	if local {
-		handle(context.TODO(), Input{
-			Test: true,
+		handle(context.TODO(), events.LambdaFunctionURLRequest{
+			QueryStringParameters: map[string]string{
+				"body":   "wow",
+				"action": "manual",
+				"test":   "true",
+			},
 		})
 	} else {
 		lambda.Start(handle)
 	}
 }
 
-func handle(ctx context.Context, i Input) (string, error) {
-	if i.Test {
+func handle(ctx context.Context, req events.LambdaFunctionURLRequest) (string, error) {
+	queryParams := req.QueryStringParameters
+	action := queryParams["action"]
+	secret := queryParams["secret"]
+	test := queryParams["test"]
+	body := queryParams["body"]
+
+	if action == "" {
+		return "", nil
+	}
+	if action == "manual" && secret != os.Getenv("TOKEN") {
+		return "unauthorized", nil
+	}
+
+	if test == "true" {
 		channel = "870190331554054194"
+	}
+
+	bot, err := discordgo.New("Bot " + os.Getenv("TOKEN"))
+	check(err)
+
+	if action == "manual" {
+		_, err3 := bot.ChannelMessageSend(channel, body)
+		check(err3)
+		return "message sent", nil
 	}
 
 	now := time.Now()
@@ -53,8 +76,6 @@ func handle(ctx context.Context, i Input) (string, error) {
 
 	timestampFull := fmt.Sprintf("<t:%d:f>", secondSaturday.Unix())
 	timestampRel := fmt.Sprintf("<t:%d:R>", secondSaturday.Unix())
-	bot, err := discordgo.New("Bot " + os.Getenv("TOKEN"))
-	check(err)
 
 	if now.Year() == threeDaysBefore.Year() && now.Month() == threeDaysBefore.Month() && now.Day() == threeDaysBefore.Day() {
 		slog.Info("3 days")
