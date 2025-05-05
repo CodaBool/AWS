@@ -15,3 +15,21 @@ upload:
   docker build -t discord-reminder .
   docker tag discord-reminder:latest 919759177803.dkr.ecr.us-east-1.amazonaws.com/discord-reminder:latest
   docker push 919759177803.dkr.ecr.us-east-1.amazonaws.com/discord-reminder:latest
+
+build-podman:
+  podman build -t discord-reminder .
+
+run-podman: build-podman
+  podman run \
+  -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+  -e AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-''} \
+  --env-file ./.env \
+  --rm \
+  discord-reminder
+
+upload-podman:
+  aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin 919759177803.dkr.ecr.us-east-1.amazonaws.com
+  podman build -t discord-reminder .
+  podman tag discord-reminder:latest 919759177803.dkr.ecr.us-east-1.amazonaws.com/discord-reminder:latest
+  podman push 919759177803.dkr.ecr.us-east-1.amazonaws.com/discord-reminder:latest

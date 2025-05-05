@@ -66,8 +66,11 @@ func handle(ctx context.Context, req events.LambdaFunctionURLRequest) (string, e
 	secondSaturday := firstDay.AddDate(0, 0, firstSaturdayOffset+7)
 
 	// UTC -> 2:30 PM EST
-	secondSaturday = secondSaturday.Add(time.Hour*19 + time.Minute*30)
-	slog.Info("target time is " + secondSaturday.Add(-(time.Hour * 5)).Format(time.RFC3339) + " EST")
+	loc, err := time.LoadLocation("America/New_York")
+	check(err)
+	secondSaturday = time.Date(secondSaturday.Year(), secondSaturday.Month(), secondSaturday.Day(), 14, 30, 0, 0, loc)
+	slog.Info("target time is " + secondSaturday.Format(time.RFC3339) + " local")
+
 	slog.Info(fmt.Sprintf("today is %dth day at hour %d", now.Day(), now.Hour()-5))
 
 	threeDaysBefore := secondSaturday.AddDate(0, 0, -3)
