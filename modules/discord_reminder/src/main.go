@@ -6,6 +6,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ssm"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/bwmarrin/discordgo"
@@ -22,9 +26,10 @@ func main() {
 	if local {
 		handle(context.TODO(), events.LambdaFunctionURLRequest{
 			QueryStringParameters: map[string]string{
-				"body":   "wow",
-				"action": "manual",
-				"test":   "true",
+				"body":   "wow",              // any
+				"action": "other",            // "manual", !=
+				"test":   "true",             // "true", !=
+				"secret": os.Getenv("TOKEN"), // match with what's in .env
 			},
 		})
 	} else {
@@ -33,6 +38,22 @@ func main() {
 }
 
 func handle(ctx context.Context, req events.LambdaFunctionURLRequest) (string, error) {
+	sess := session.Must(session.NewSession())
+	ssmClient := ssm.New(sess)
+
+	param, err := ssmClient.GetParameter(&ssm.GetParameterInput{
+		Name:           aws.String("post_discord_reminder"),
+		WithDecryption: aws.Bool(true),
+	})
+	check(err)
+
+	if *param.Parameter.Value != "true" {
+		slog.Info("Reminders are paused. Exiting.")
+		return "", nil
+	} else {
+		slog.Info("post_discord_reminder = " + *param.Parameter.Value + " | continuing")
+	}
+
 	queryParams := req.QueryStringParameters
 	action := queryParams["action"]
 	secret := queryParams["secret"]
@@ -40,9 +61,11 @@ func handle(ctx context.Context, req events.LambdaFunctionURLRequest) (string, e
 	body := queryParams["body"]
 
 	if action == "" {
+		slog.Error("no action")
 		return "", nil
 	}
 	if action == "manual" && secret != os.Getenv("TOKEN") {
+		slog.Error("unauthorized")
 		return "unauthorized", nil
 	}
 
@@ -56,6 +79,7 @@ func handle(ctx context.Context, req events.LambdaFunctionURLRequest) (string, e
 	if action == "manual" {
 		_, err3 := bot.ChannelMessageSend(channel, body)
 		check(err3)
+		slog.Info("manual message " + channel + " " + body)
 		return "message sent", nil
 	}
 
@@ -80,9 +104,12 @@ func handle(ctx context.Context, req events.LambdaFunctionURLRequest) (string, e
 	timestampFull := fmt.Sprintf("<t:%d:f>", secondSaturday.Unix())
 	timestampRel := fmt.Sprintf("<t:%d:R>", secondSaturday.Unix())
 
+	slog.Info("relative = " + timestampRel)
+	slog.Info("full = " + timestampFull)
+
 	if now.Year() == threeDaysBefore.Year() && now.Month() == threeDaysBefore.Month() && now.Day() == threeDaysBefore.Day() {
 		slog.Info("3 days")
-		_, err2 := bot.ChannelMessageSend(channel, "@everyone next session in "+timestampRel+","+timestampFull)
+		_, err2 := bot.ChannelMessageSend(channel, "@everyone next session in "+timestampRel+" ("+timestampFull+")")
 		check(err2)
 	} else if now.Year() == oneDayBefore.Year() && now.Month() == oneDayBefore.Month() && now.Day() == oneDayBefore.Day() {
 		slog.Info("1 day")

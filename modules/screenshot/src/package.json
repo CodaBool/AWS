@@ -1,0 +1,13 @@
+{
+  "name": "screenshot",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "type": "module",
+  "dependencies": {
+    "@sparticuz/chromium": "^133.0.0",
+    "puppeteer-core": "^24.4.0"
+  }
+}
