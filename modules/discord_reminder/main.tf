@@ -12,3 +12,10 @@ module "lambda" {
   })
   environment = { for tuple in regexall("(.*?)=(.*)", file("${path.module}/src/.env")) : tuple[0] => sensitive(tuple[1]) }
 }
+
+
+resource "aws_iam_role_policy_attachment" "ssm_full" {
+  role       = module.lambda.role
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMFullAccess"
+}
+
