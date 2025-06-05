@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"time"
 
@@ -19,6 +20,29 @@ import (
 var dg *discordgo.Session
 
 var channel = "1254921386267250879"
+
+var imageUrls = []string{
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/hq_2.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/hq_3.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/hq_4.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/hq_5.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/hq_6.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/hq_7.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/hq_8.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/hq_9.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/hq_10.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/hq_11.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/hq_12.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/hq_13.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/hq_14.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/sq_5.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/sq_6.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/sq_8.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/sq_11.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/sq_13.gif?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/sq_14.webp?raw=true",
+	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/sq_15.gif?raw=true",
+}
 
 func main() {
 	local := os.Getenv("AWS_LAMBDA_FUNCTION_NAME") == ""
@@ -107,17 +131,23 @@ func handle(ctx context.Context, req events.LambdaFunctionURLRequest) (string, e
 	slog.Info("relative = " + timestampRel)
 	slog.Info("full = " + timestampFull)
 
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+	randomIndex := rand.Intn(len(imageUrls))
+	gifUrl := imageUrls[randomIndex]
+
+	slog.Info("random gif URL = " + gifUrl)
+
 	if now.Year() == threeDaysBefore.Year() && now.Month() == threeDaysBefore.Month() && now.Day() == threeDaysBefore.Day() {
 		slog.Info("3 days")
-		_, err2 := bot.ChannelMessageSend(channel, "@everyone next session in "+timestampRel+" ("+timestampFull+")")
+		_, err2 := bot.ChannelMessageSend(channel, "@everyone next [session]("+gifUrl+") in "+timestampRel+" ("+timestampFull+")")
 		check(err2)
 	} else if now.Year() == oneDayBefore.Year() && now.Month() == oneDayBefore.Month() && now.Day() == oneDayBefore.Day() {
 		slog.Info("1 day")
-		_, err2 := bot.ChannelMessageSend(channel, "@everyone session "+timestampRel)
+		_, err2 := bot.ChannelMessageSend(channel, "@everyone [session]("+gifUrl+") "+timestampRel)
 		check(err2)
 	} else if now.Year() == secondSaturday.Year() && now.Month() == secondSaturday.Month() && now.Day() == secondSaturday.Day() && now.Hour() == oneHourBefore.Hour() {
 		slog.Info("1 hour")
-		_, err2 := bot.ChannelMessageSend(channel, "@everyone session in "+timestampRel)
+		_, err2 := bot.ChannelMessageSend(channel, "@everyone [session]("+gifUrl+") in "+timestampRel)
 		check(err2)
 	} else {
 		slog.Info("no reminder today")
