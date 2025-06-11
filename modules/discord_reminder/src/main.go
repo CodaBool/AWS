@@ -139,15 +139,15 @@ func handle(ctx context.Context, req events.LambdaFunctionURLRequest) (string, e
 
 	if now.Year() == threeDaysBefore.Year() && now.Month() == threeDaysBefore.Month() && now.Day() == threeDaysBefore.Day() {
 		slog.Info("3 days")
-		_, err2 := bot.ChannelMessageSend(channel, "@everyone next session in "+timestampRel+" ("+timestampFull+")")
+		_, err2 := bot.ChannelMessageSend(channel, "@everyone next session "+timestampRel+" ("+timestampFull+")")
 		check(err2)
 	} else if now.Year() == oneDayBefore.Year() && now.Month() == oneDayBefore.Month() && now.Day() == oneDayBefore.Day() {
 		slog.Info("1 day")
-		_, err2 := bot.ChannelMessageSend(channel, "@everyone session "+timestampRel)
+		_, err2 := bot.ChannelMessageSend(channel, "@everyone next session "+timestampRel)
 		check(err2)
 	} else if now.Year() == secondSaturday.Year() && now.Month() == secondSaturday.Month() && now.Day() == secondSaturday.Day() && now.Hour() == oneHourBefore.Hour() {
 		slog.Info("1 hour")
-		_, err2 := bot.ChannelMessageSend(channel, "@everyone [session]("+gifUrl+") in "+timestampRel)
+		_, err2 := bot.ChannelMessageSend(channel, "@everyone [session]("+gifUrl+") starting "+timestampRel)
 		check(err2)
 	} else {
 		slog.Info("no reminder today")
