@@ -17,7 +17,7 @@
 - `echo 2 > /proc/sys/vm/drop_caches` requires being sudo
   - this freed 85MB / 20% of memory, could be cron every 12 hours if you want to make Linus unhappy. I noticed after an hour it went back to its regular value of 126M / 34% usage
 - `echo vm.vfs_cache_pressure=1000 >> /etc/sysctl.conf` requires being sudo
-- `sudo sysctl -w vm.swappiness=10` 
+- `sudo sysctl -w vm.swappiness=10`
 - `sudo sysctl -w vm.vfs_cache_pressure=200`
 
 ## Notes
@@ -30,3 +30,9 @@
 - 1GB  = $1.80
 - 2GB  = $4.03
 - 4GB  = $7.27
+
+
+# updating a Golang project
+1. set latest go version in `go.mod`
+2. run `go get -u .` from inside `src` folder
+3. run `go mod tidy`

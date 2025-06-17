@@ -11,10 +11,13 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/bwmarrin/discordgo"
+	"github.com/fatih/color"
 	pg "github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/renderer"
+	"github.com/olekukonko/tablewriter/tw"
 )
 
 var db *pgxpool.Pool
@@ -218,6 +221,66 @@ func upcomingMovies() {
 	}, movieChannel, "Upcoming Movies")
 }
 
+func buildTable(out *strings.Builder) *tablewriter.Table {
+	// Color config
+	colorCfg := renderer.ColorizedConfig{
+		Header: renderer.Tint{
+			FG: renderer.Colors{color.FgGreen, color.Bold},
+			BG: renderer.Colors{color.BgHiWhite},
+		},
+		Column: renderer.Tint{
+			FG: renderer.Colors{color.FgCyan},
+			Columns: []renderer.Tint{
+				{FG: renderer.Colors{color.FgMagenta}},
+				{}, // default (cyan)
+				{FG: renderer.Colors{color.FgHiRed}},
+			},
+		},
+		Footer: renderer.Tint{
+			FG: renderer.Colors{color.FgYellow, color.Bold},
+			Columns: []renderer.Tint{
+				{},
+				{FG: renderer.Colors{color.FgHiYellow}},
+				{},
+			},
+		},
+		Border:    renderer.Tint{FG: renderer.Colors{color.FgWhite}},
+		Separator: renderer.Tint{FG: renderer.Colors{color.FgWhite}},
+	}
+
+	// Table config
+	cfg := tablewriter.Config{
+		Header: tw.CellConfig{
+			Formatting: tw.CellFormatting{
+				AutoWrap:   tw.WrapNone,
+				AutoFormat: tw.On,
+			},
+			Alignment: tw.CellAlignment{
+				Global: tw.AlignLeft,
+			},
+		},
+		Row: tw.CellConfig{
+			Formatting: tw.CellFormatting{
+				AutoWrap: tw.WrapNone,
+			},
+			Alignment: tw.CellAlignment{
+				Global: tw.AlignLeft,
+			},
+		},
+		Footer: tw.CellConfig{
+			Alignment: tw.CellAlignment{
+				Global: tw.AlignRight,
+			},
+		},
+	}
+
+	return tablewriter.NewTable(
+		out,
+		tablewriter.WithRenderer(renderer.NewColorized(colorCfg)),
+		tablewriter.WithConfig(cfg),
+	)
+}
+
 func golang() {
 	var gos []*TrendingGo
 	err := pg.Select(context.Background(), db, &gos, `SELECT * FROM trending_gos ORDER BY stars DESC LIMIT 100 OFFSET 19`)
@@ -232,41 +295,35 @@ func golang() {
 	for i, v := range gos {
 		interfaces[i] = v
 	}
+
 	reducedArr := reduce(interfaces, 20)
-
-	tableString := &strings.Builder{}
-	table := tablewriter.NewWriter(tableString)
-	table.SetHeader([]string{"Stars", "Repo", "Description"})
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	table.SetAutoWrapText(false)
-	table.SetAutoFormatHeaders(true)
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetCenterSeparator("")
-	table.SetColumnSeparator("")
-	// table.SetRowSeparator("")
-	table.SetBorder(false)
-	table.SetTablePadding("\t")
-	table.SetNoWhiteSpace(true)
-
 	var messages []string
+
 	for i := 0; i < 5; i++ {
 		var scrapeTime time.Time
-		var tbData [][]string
+		tableString := &strings.Builder{}
+		table := buildTable(tableString)
+		table.Header([]string{"Stars", "Repo", "Description"})
+
 		for j := 0; j < len(reducedArr[i]); j++ {
 			if s, ok := reducedArr[i][j].(*TrendingGo); ok {
 				stars := strconv.FormatInt(s.Stars/1000, 10) + "k"
-				s.Description = strings.ReplaceAll(ShortText(s.Description, 30), "\n", " ")
-				tbData = append(tbData, []string{stars, s.Name, s.Description})
+				desc := strings.ReplaceAll(ShortText(s.Description, 30), "\n", " ")
+				table.Append([]string{stars, s.Name, desc})
 				scrapeTime = s.UpdatedAt
 			}
 		}
-		table.AppendBulk(tbData)
+
 		table.Render()
-		messages = append(messages, fmt.Sprintf("```md\nTop Go Projects (%d/5), scraped %s\n\n%s```", i+1, scrapeTime.Format("01-02"), tableString))
-		table.ClearRows()
-		tableString.Reset()
+
+		messages = append(messages, fmt.Sprintf(
+			"```md\nTop Go Projects (%d/5), scraped %s\n\n%s```",
+			i+1,
+			scrapeTime.Format("01-02"),
+			tableString.String(),
+		))
 	}
+
 	post(messages, nil, goChannel, "Golang")
 }
 
@@ -283,33 +340,37 @@ func python() {
 	}
 	reducedArr := reduce(interfaces, 20)
 
-	tableString := &strings.Builder{}
-	table := tablewriter.NewWriter(tableString)
-	table.SetHeader([]string{"Downloads", "Package", "Description"})
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	table.SetCenterSeparator("")
-	table.SetColumnSeparator("")
-	table.SetBorder(false)
-	table.SetTablePadding("\t")
-	table.SetNoWhiteSpace(true)
-
 	var messages []string
 	for i := 0; i < 5; i++ {
 		var tbData [][]string
 		var scrapeTime time.Time
+
 		for j := 0; j < len(reducedArr[i]); j++ {
 			if s, ok := reducedArr[i][j].(*TrendingPY); ok {
 				scrapeTime = s.UpdatedAt
 				downloads := strconv.FormatInt(s.Downloads/1000/1000, 10) + "m"
-				tbData = append(tbData, []string{downloads, s.Name, ShortText(s.Description, 30)})
+				desc := strings.ReplaceAll(ShortText(s.Description, 30), "\n", " ")
+				tbData = append(tbData, []string{downloads, s.Name, desc})
 			}
 		}
-		table.AppendBulk(tbData)
+
+		tableString := &strings.Builder{}
+		table := buildTable(tableString)
+		table.Header([]string{"Downloads", "Package", "Description"})
+
+		for _, row := range tbData {
+			table.Append(row)
+		}
 		table.Render()
-		messages = append(messages, fmt.Sprintf("```md\nTop Python packages (%d/5), scraped %s\n\n%s```", i+1, scrapeTime.Format("01-02"), tableString))
-		table.ClearRows()
-		tableString.Reset()
+
+		messages = append(messages, fmt.Sprintf(
+			"```md\nTop Python packages (%d/5), scraped %s\n\n%s```",
+			i+1,
+			scrapeTime.Format("01-02"),
+			tableString.String(),
+		))
 	}
+
 	post(messages, nil, pythonChannel, "Python")
 }
 
@@ -326,24 +387,26 @@ func games() {
 	}
 
 	tableString := &strings.Builder{}
-	table := tablewriter.NewWriter(tableString)
-	table.SetHeader([]string{"Title", "Price"})
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	table.SetCenterSeparator("")
-	table.SetColumnSeparator("")
-	table.SetBorder(false)
-	table.SetTablePadding("\t")
-	table.SetNoWhiteSpace(true)
+	table := buildTable(tableString)
+	table.Header([]string{"Title", "Price"})
 
-	var tbData [][]string
 	var scrapeTime time.Time
 	for _, game := range gs {
 		scrapeTime = game.UpdatedAt
-		tbData = append(tbData, []string{limitString(game.Title, 25), game.Price})
+		row := []string{limitString(game.Title, 25), game.Price}
+		table.Append(row)
 	}
-	table.AppendBulk(tbData)
+
 	table.Render()
-	messages := []string{fmt.Sprintf("```md\nTop 16 Selling Games on Steam, scraped %s\n\n%s```", scrapeTime.Format("01-02"), tableString)}
+
+	messages := []string{
+		fmt.Sprintf(
+			"```md\nTop 16 Selling Games on Steam, scraped %s\n\n%s```",
+			scrapeTime.Format("01-02"),
+			tableString.String(),
+		),
+	}
+
 	post(messages, nil, gamesChannel, "Games")
 }
 
@@ -360,34 +423,41 @@ func javascript() {
 	}
 	reducedArr := reduce(interfaces, 20)
 
-	tableString := &strings.Builder{}
-	table := tablewriter.NewWriter(tableString)
-	table.SetHeader([]string{"Rank", "Package", "Description"})
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	table.SetCenterSeparator("")
-	table.SetColumnSeparator("")
-	table.SetBorder(false)
-	table.SetTablePadding("\t")
-	table.SetNoWhiteSpace(true)
-
 	var messages []string
 	for i := 0; i < 4; i++ {
 		var subject string
 		var sTime time.Time
 		var tbData [][]string
+
 		for j := 0; j < len(reducedArr[i]); j++ {
 			if s, ok := reducedArr[i][j].(*TrendingJS); ok {
-				tbData = append(tbData, []string{strconv.Itoa(s.Rank), s.Title, ShortText(s.Description, 30)})
+				tbData = append(tbData, []string{
+					strconv.Itoa(s.Rank),
+					s.Title,
+					ShortText(s.Description, 30),
+				})
 				subject = s.Subject
 				sTime = s.UpdatedAt
 			}
 		}
-		table.AppendBulk(tbData)
+
+		tableString := &strings.Builder{}
+		table := buildTable(tableString)
+		table.Header([]string{"Rank", "Package", "Description"})
+
+		for _, row := range tbData {
+			table.Append(row)
+		}
 		table.Render()
-		messages = append(messages, fmt.Sprintf("```md\nTop 20 %s JavaScript packages, scraped %s\n\n%s```", subject, sTime.Format("01-02"), tableString))
-		table.ClearRows()
-		tableString.Reset()
+
+		messages = append(messages, fmt.Sprintf(
+			"```md\nTop 20 %s JavaScript packages, scraped %s\n\n%s```",
+			subject,
+			sTime.Format("01-02"),
+			tableString.String(),
+		))
 	}
+
 	post(messages, nil, javascriptChannel, "JavaScript")
 }
 
@@ -408,33 +478,37 @@ func github() {
 	}
 	reducedArr := reduce(interfaces, 20)
 
-	tableString := &strings.Builder{}
-	table := tablewriter.NewWriter(tableString)
-	table.SetHeader([]string{"Stars", "Repo", "Description"})
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	table.SetCenterSeparator("")
-	table.SetColumnSeparator("")
-	table.SetBorder(false)
-	table.SetTablePadding("\t")
-	table.SetNoWhiteSpace(true)
-
 	var messages []string
 	for i := 0; i < 5; i++ {
 		var scrapeTime time.Time
 		var tbData [][]string
+
 		for j := 0; j < 20; j++ {
 			if s, ok := reducedArr[i][j].(*TrendingGithub); ok {
 				stars := strconv.FormatInt(s.Stars/1000, 10) + "k"
-				tbData = append(tbData, []string{stars, s.Name, ShortText(s.Description, 30)})
+				desc := strings.ReplaceAll(ShortText(s.Description, 30), "\n", " ")
+				tbData = append(tbData, []string{stars, s.Name, desc})
 				scrapeTime = s.UpdatedAt
 			}
 		}
-		table.AppendBulk(tbData)
+
+		tableString := &strings.Builder{}
+		table := buildTable(tableString)
+		table.Header([]string{"Stars", "Repo", "Description"})
+
+		for _, row := range tbData {
+			table.Append(row)
+		}
 		table.Render()
-		messages = append(messages, fmt.Sprintf("```md\nTop GitHub Repos (%d/5), scraped %s\n\n%s```", i+1, scrapeTime.Format("01-02"), tableString))
-		table.ClearRows()
-		tableString.Reset()
+
+		messages = append(messages, fmt.Sprintf(
+			"```md\nTop GitHub Repos (%d/5), scraped %s\n\n%s```",
+			i+1,
+			scrapeTime.Format("01-02"),
+			tableString.String(),
+		))
 	}
+
 	post(messages, nil, githubChannel, "github")
 }
 
