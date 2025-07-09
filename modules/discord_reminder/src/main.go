@@ -7,12 +7,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ssm"
-
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/bwmarrin/discordgo"
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -50,10 +49,10 @@ func main() {
 	if local {
 		handle(context.TODO(), events.LambdaFunctionURLRequest{
 			QueryStringParameters: map[string]string{
-				"body":   "wow",              // any
-				"action": "other",            // "manual", !=
-				"test":   "true",             // "true", !=
-				"secret": os.Getenv("TOKEN"), // match with what's in .env
+				"body":   "wow",
+				"action": "other",
+				"test":   "true",
+				"secret": os.Getenv("TOKEN"),
 			},
 		})
 	} else {
@@ -100,6 +99,11 @@ func handle(ctx context.Context, req events.LambdaFunctionURLRequest) (string, e
 	bot, err := discordgo.New("Bot " + os.Getenv("TOKEN"))
 	check(err)
 
+	loc, err := time.LoadLocation("America/New_York")
+	check(err)
+
+	now := time.Now().In(loc)
+
 	if action == "manual" {
 		_, err3 := bot.ChannelMessageSend(channel, body)
 		check(err3)
@@ -107,26 +111,21 @@ func handle(ctx context.Context, req events.LambdaFunctionURLRequest) (string, e
 		return "message sent", nil
 	}
 
-	now := time.Now()
+	// Find 2nd Saturday
 	year, month, _ := now.Date()
-	firstDay := time.Date(year, month, 1, 0, 0, 0, 0, now.Location())
+	firstDay := time.Date(year, month, 1, 0, 0, 0, 0, loc)
 	firstSaturdayOffset := (6 - int(firstDay.Weekday()) + 7) % 7
 	secondSaturday := firstDay.AddDate(0, 0, firstSaturdayOffset+7)
+	eventTime := time.Date(secondSaturday.Year(), secondSaturday.Month(), secondSaturday.Day(), 14, 30, 0, 0, loc)
 
-	// UTC -> 2:30 PM EST
-	loc, err := time.LoadLocation("America/New_York")
-	check(err)
-	secondSaturday = time.Date(secondSaturday.Year(), secondSaturday.Month(), secondSaturday.Day(), 14, 30, 0, 0, loc)
-	slog.Info("target time is " + secondSaturday.Format(time.RFC3339) + " local")
+	slog.Info("Event time: " + eventTime.Format(time.RFC1123))
 
-	slog.Info(fmt.Sprintf("today is %dth day at hour %d", now.Day(), now.Hour()-5))
+	threeDaysBefore := eventTime.AddDate(0, 0, -3)
+	oneDayBefore := eventTime.AddDate(0, 0, -1)
+	oneHourBefore := eventTime.Add(-1 * time.Hour)
 
-	threeDaysBefore := secondSaturday.AddDate(0, 0, -3)
-	oneDayBefore := secondSaturday.AddDate(0, 0, -1)
-	oneHourBefore := secondSaturday.Add(-time.Hour)
-
-	timestampFull := fmt.Sprintf("<t:%d:f>", secondSaturday.Unix())
-	timestampRel := fmt.Sprintf("<t:%d:R>", secondSaturday.Unix())
+	timestampFull := fmt.Sprintf("<t:%d:f>", eventTime.Unix())
+	timestampRel := fmt.Sprintf("<t:%d:R>", eventTime.Unix())
 
 	slog.Info("relative = " + timestampRel)
 	slog.Info("full = " + timestampFull)
@@ -137,21 +136,25 @@ func handle(ctx context.Context, req events.LambdaFunctionURLRequest) (string, e
 
 	slog.Info("random gif URL = " + gifUrl)
 
-	if now.Year() == threeDaysBefore.Year() && now.Month() == threeDaysBefore.Month() && now.Day() == threeDaysBefore.Day() {
-		slog.Info("3 days")
+	if sameHour(now, threeDaysBefore) {
+		slog.Info("Sending 3-day reminder")
 		_, err2 := bot.ChannelMessageSend(channel, "@everyone next session "+timestampRel+" ("+timestampFull+")")
 		check(err2)
-	} else if now.Year() == oneDayBefore.Year() && now.Month() == oneDayBefore.Month() && now.Day() == oneDayBefore.Day() {
-		slog.Info("1 day")
+	} else if sameHour(now, oneDayBefore) {
+		slog.Info("Sending 1-day reminder")
 		_, err2 := bot.ChannelMessageSend(channel, "@everyone next session "+timestampRel)
 		check(err2)
-	} else if now.Year() == secondSaturday.Year() && now.Month() == secondSaturday.Month() && now.Day() == secondSaturday.Day() && now.Hour() == oneHourBefore.Hour() {
-		slog.Info("1 hour")
+	} else if sameHour(now, oneHourBefore) {
+		slog.Info("Sending 1-hour reminder")
 		_, err2 := bot.ChannelMessageSend(channel, "@everyone [session]("+gifUrl+") starting "+timestampRel)
 		check(err2)
 	} else {
-		slog.Info("no reminder today")
+		slog.Info("No reminder needed this hour")
 	}
 
 	return "", nil
+}
+
+func sameHour(a, b time.Time) bool {
+	return a.Truncate(time.Hour).Equal(b.Truncate(time.Hour))
 }
