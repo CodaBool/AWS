@@ -19,6 +19,7 @@ import (
 var dg *discordgo.Session
 
 var channel = "1254921386267250879"
+var roleId = "1406074645958103180"
 
 var imageUrls = []string{
 	"https://github.com/CodaBool/cloudflare/blob/main/cron/img/hq_2.gif?raw=true",
@@ -94,6 +95,7 @@ func handle(ctx context.Context, req events.LambdaFunctionURLRequest) (string, e
 
 	if test == "true" {
 		channel = "870190331554054194"
+		roleId = "1406075505563664444"
 	}
 
 	bot, err := discordgo.New("Bot " + os.Getenv("TOKEN"))
@@ -135,18 +137,19 @@ func handle(ctx context.Context, req events.LambdaFunctionURLRequest) (string, e
 	gifUrl := imageUrls[randomIndex]
 
 	slog.Info("random gif URL = " + gifUrl)
+	mention := "<@&" + roleId + ">"
 
 	if sameHour(now, threeDaysBefore) {
 		slog.Info("Sending 3-day reminder")
-		_, err2 := bot.ChannelMessageSend(channel, "@everyone next session "+timestampRel+" ("+timestampFull+")")
+		_, err2 := bot.ChannelMessageSend(channel, mention+" next session "+timestampRel+" ("+timestampFull+")")
 		check(err2)
 	} else if sameHour(now, oneDayBefore) {
 		slog.Info("Sending 1-day reminder")
-		_, err2 := bot.ChannelMessageSend(channel, "@everyone next session "+timestampRel)
+		_, err2 := bot.ChannelMessageSend(channel, mention+" next session "+timestampRel)
 		check(err2)
 	} else if sameHour(now, oneHourBefore) {
 		slog.Info("Sending 1-hour reminder")
-		_, err2 := bot.ChannelMessageSend(channel, "@everyone [session]("+gifUrl+") starting "+timestampRel)
+		_, err2 := bot.ChannelMessageSend(channel, mention+" [session]("+gifUrl+") starting "+timestampRel)
 		check(err2)
 	} else {
 		slog.Info("No reminder needed this hour")

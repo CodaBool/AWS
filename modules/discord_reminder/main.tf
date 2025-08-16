@@ -7,8 +7,7 @@ module "lambda" {
   interval            = "cron(30 * * * ? *)" # can -5 hours to get EST time
   event_input = jsonencode({
     QueryStringParameters : {
-      action : "cron",
-      test : "true"
+      action : "cron"
     }
   })
   environment = { for tuple in regexall("(.*?)=(.*)", file("${path.module}/src/.env")) : tuple[0] => sensitive(tuple[1]) }
