@@ -15,7 +15,7 @@ import (
 func scrapePY(skipDesc bool) {
 	// log := logger.With().Str("func", "scrapePY").Logger()
 
-	defer wg.Done()
+	// defer wg.Done()
 	var data []TrendingPY
 	client := &http.Client{Timeout: 15 * time.Second}
 	req, err := http.NewRequest(http.MethodGet, "https://hugovk.github.io/top-pypi-packages/top-pypi-packages-30-days.min.json", nil)
@@ -25,6 +25,8 @@ func scrapePY(skipDesc bool) {
 	defer res.Body.Close()
 	body, err := io.ReadAll(res.Body)
 	check(err)
+
+	slog.Debug(string(body))
 
 	gjson.GetBytes(body, "rows").ForEach(func(index gjson.Result, item gjson.Result) bool {
 		if index.Int() == 101 {
@@ -95,7 +97,7 @@ func scrapeSummary(packages []TrendingPY) {
 	})
 	for _, p := range packages {
 		slog.Info(fmt.Sprintf("fetch description for py %s", p.Name))
-		c.Visit("https://www.pypistats.org/packages/" + p.Name)
+		c.Visit("https://pypistats.org/packages/" + p.Name)
 	}
 	slog.Info(fmt.Sprintf("scraped %d py", len(newData)))
 	db.Exec("DELETE FROM trending_pies")

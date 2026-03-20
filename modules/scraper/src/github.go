@@ -14,7 +14,7 @@ import (
 func scrapeGithub() {
 	// log := logger.With().Str("func", "scrapeGithub").Logger()
 
-	defer wg.Done()
+	// defer wg.Done()
 	var data []TrendingGithub
 	client := &http.Client{Timeout: 9 * time.Second}
 

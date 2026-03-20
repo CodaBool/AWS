@@ -77,7 +77,7 @@ resource "aws_ecr_repository" "main" {
   name = var.name
   force_delete = true
   image_scanning_configuration {
-    scan_on_push = true
+    scan_on_push = false
   }
 }
 
@@ -87,8 +87,8 @@ resource "aws_ecr_lifecycle_policy" "remove_old_images" {
     rules = [{
       rulePriority = 1
       description = "Delete untagged images"
-      action = { 
-        type = "expire" 
+      action = {
+        type = "expire"
       }
       selection = {
         tagStatus = "untagged"

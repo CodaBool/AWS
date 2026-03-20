@@ -1,142 +1,409 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
-	"github.com/gocolly/colly"
-	"gorm.io/gorm"
+	"github.com/PuerkitoBio/goquery"
+	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/chromedp"
+	// "github.com/gocolly/colly"
+	// "gorm.io/gorm"
 )
 
 func scrapeUpcomingMovies() {
-	// log := logger.With().Str("func", "scrapeUpcomingMovies").Logger()
-
-	defer wg.Done()
 	var data []UpcomingMovie
-	c := colly.NewCollector()
-	c.OnHTML(".ipc-page-section--base article", func(e *colly.HTMLElement) {
-		release := e.DOM.Children().Eq(0).Text()
-		e.ForEach("ul", func(_ int, e *colly.HTMLElement) {
-			e.ForEach("a", func(_ int, el *colly.HTMLElement) {
-				if el.Text != "" {
-					releaseTime, err := time.Parse("Jan 2, 2006", release)
-					check(err)
-					slog.Debug(fmt.Sprintf("Movies, get title from text %s", el.Text))
-					data = append(data, UpcomingMovie{
-						Release: releaseTime,
-						Title:   el.Text[:len(el.Text)-7],
-					})
-				}
+
+	chromePath := os.Getenv("CHROME_PATH")
+	if chromePath == "" {
+		chromePath = "/usr/bin/chromium"
+	}
+
+	profileDir, errProf := os.MkdirTemp("/tmp", "chromedp-profile-*")
+	if errProf != nil {
+		slog.Error("chrome profile", "err", errProf)
+		return
+	}
+	defer os.RemoveAll(profileDir)
+
+	opts := append(chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.ExecPath(chromePath),
+		chromedp.Flag("headless", "new"),
+		chromedp.NoSandbox,
+		chromedp.Flag("disable-setuid-sandbox", true),
+		chromedp.Flag("disable-dev-shm-usage", true),
+		chromedp.Flag("no-zygote", true),
+		chromedp.Flag("single-process", true),
+		chromedp.Flag("disable-gpu", true),
+		chromedp.Flag("disable-software-rasterizer", true),
+		chromedp.Flag("disable-crash-reporter", true),
+		chromedp.Flag("disable-breakpad", true),
+		chromedp.Flag("disable-background-networking", true),
+		chromedp.Flag("user-data-dir", profileDir),
+		chromedp.Flag("data-path", profileDir),
+		chromedp.Flag("disk-cache-dir", "/tmp/chromedp-cache"),
+		chromedp.Flag("window-size", "1366,768"),
+		chromedp.UserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"),
+	)
+
+	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	defer cancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	ctx, cancel = context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+
+	var html string
+
+	err := chromedp.Run(ctx,
+		network.Enable(),
+		chromedp.Navigate("https://www.imdb.com/calendar/?region=US&type=MOVIE"),
+		chromedp.WaitReady("body", chromedp.ByQuery),
+		chromedp.WaitVisible(`article[data-testid="calendar-section"]`, chromedp.ByQuery),
+		chromedp.Sleep(1*time.Second),
+		chromedp.Evaluate(`document.documentElement.outerHTML`, &html),
+	)
+	if err != nil {
+		slog.Error("chromedp failed", "err", err)
+		return
+	}
+
+	slog.Info("captured html", "len", len(html))
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		slog.Error("goquery parse failed", "err", err)
+		return
+	}
+
+	doc.Find(`article[data-testid="calendar-section"]`).Each(func(_ int, sec *goquery.Selection) {
+		releaseText := strings.TrimSpace(
+			sec.Find(`[data-testid="release-date"] .ipc-title__text`).First().Text(),
+		)
+		if releaseText == "" {
+			return
+		}
+
+		releaseTime, err := time.Parse("Jan 2, 2006", releaseText)
+		if err != nil {
+			slog.Error("failed to parse release date", "releaseText", releaseText, "err", err)
+			return
+		}
+
+		sec.Find(`li[data-testid="coming-soon-entry"]`).Each(func(_ int, item *goquery.Selection) {
+			title := strings.TrimSpace(
+				item.Find(`a.ipc-metadata-list-summary-item__t`).First().Text(),
+			)
+			if title == "" {
+				title, _ = item.Find("a").First().Attr("aria-label")
+				title = strings.TrimSpace(title)
+			}
+			if title == "" {
+				return
+			}
+
+			data = append(data, UpcomingMovie{
+				Title:   title,
+				Release: releaseTime,
 			})
 		})
 	})
-	c.OnError(func(_ *colly.Response, err error) { check(err) })
-	c.Visit("https://www.imdb.com/calendar/?region=US&type=MOVIE")
-	db.Exec("DELETE FROM upcoming_movies")
-	slog.Info(fmt.Sprintf("scraped %d upcoming movies", len(data)))
-	result := db.Create(data)
-	slog.Info(fmt.Sprintf("inserted %d upcoming movies", result.RowsAffected))
-	check(result.Error)
+
+	slog.Info("scraped upcoming movies", "count", len(data))
+
+	if len(data) == 0 {
+		slog.Warn("no upcoming movies scraped")
+		return
+	}
+
+	if err := db.Exec("DELETE FROM upcoming_movies").Error; err != nil {
+		slog.Error("delete failed", "err", err)
+		return
+	}
+
+	result := db.Create(&data)
+	if result.Error != nil {
+		slog.Error("insert failed", "err", result.Error)
+		return
+	}
+
+	slog.Info("inserted upcoming movies", "rows", result.RowsAffected)
 }
 
 func scrapeTV() {
-	// log := logger.With().Str("func", "scrapeTV").Logger()
+	// defer wg.Done()
 
-	defer wg.Done()
 	var data []TrendingTV
 	var data2 []TrendingTV
-	c := colly.NewCollector()
 
-	// IMDB is splitting traffic between 2 versions of the site
-	// For now I am scraping both possible versions since
-	// idk which one nginx will give me
-	c.OnHTML(".compact-list-view", func(e *colly.HTMLElement) {
-		e.ForEach("li", func(j int, el *colly.HTMLElement) {
+	chromePath := os.Getenv("CHROME_PATH")
+	if chromePath == "" {
+		chromePath = "/usr/bin/chromium"
+	}
+
+
+	profileDir, errProf := os.MkdirTemp("/tmp", "chromedp-profile-*")
+	if errProf != nil {
+		slog.Error("chrome profile", "err", errProf)
+		return
+	}
+	defer os.RemoveAll(profileDir)
+
+
+	opts := append(chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.ExecPath(chromePath),
+		chromedp.Flag("headless", "new"),
+		chromedp.NoSandbox,
+		chromedp.Flag("disable-setuid-sandbox", true),
+		chromedp.Flag("disable-dev-shm-usage", true),
+		chromedp.Flag("no-zygote", true),
+		chromedp.Flag("single-process", true),
+		chromedp.Flag("disable-gpu", true),
+		chromedp.Flag("disable-software-rasterizer", true),
+		chromedp.Flag("disable-crash-reporter", true),
+		chromedp.Flag("disable-breakpad", true),
+		chromedp.Flag("disable-background-networking", true),
+		chromedp.Flag("user-data-dir", profileDir),
+		chromedp.Flag("data-path", profileDir),
+		chromedp.Flag("disk-cache-dir", "/tmp/chromedp-cache"),
+		chromedp.Flag("window-size", "1366,768"),
+		chromedp.UserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"),
+	)
+
+	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	defer cancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	ctx, cancel = context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+
+	var html string
+
+	err := chromedp.Run(ctx,
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			return network.Enable().Do(ctx)
+		}),
+		chromedp.Navigate("https://www.imdb.com/chart/tvmeter"),
+		chromedp.Sleep(2*time.Second),
+		chromedp.OuterHTML("html", &html, chromedp.ByQuery),
+	)
+	if err != nil {
+		slog.Error("chromedp failed", "err", err)
+		return
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		slog.Error("goquery parse failed", "err", err)
+		return
+	}
+
+	// Newer site version
+	doc.Find(".compact-list-view").Each(func(_ int, section *goquery.Selection) {
+		section.Find("li").Each(func(j int, item *goquery.Selection) {
 			var tempData TrendingTV
+
 			sign := "-"
-			if el.DOM.Find(".rank-up").Length() == 1 {
+			if item.Find(".rank-up").Length() == 1 {
 				sign = "+"
 			}
-			vel := el.DOM.Find(".meter-const-ranking").Text()
+
+			vel := strings.TrimSpace(item.Find(".meter-const-ranking").Text())
 			slog.Debug(fmt.Sprintf("TV, get velocity from %s", vel))
-			vel = strings.Split(vel, "(")[1]
-			vel = strings.Split(vel, ")")[0]
+
+			if start := strings.Index(vel, "("); start >= 0 {
+				vel = vel[start+1:]
+				if end := strings.Index(vel, ")"); end >= 0 {
+					vel = vel[:end]
+				}
+			} else {
+				vel = ""
+			}
+
 			slog.Debug(fmt.Sprintf("TV, final velocity %s", vel))
+
 			if vel == "" {
 				sign = ""
 				vel = "no change"
 			}
+
 			tempData.Velocity = sign + vel
 			tempData.Rank = j + 1
-			tempData.Title = strings.TrimSpace(el.DOM.Find("h3").Text())
-			tempData.Rating = strings.TrimSpace(el.DOM.Find(".ipc-rating-star--imdb").Text())
-			data = append(data, tempData)
+			tempData.Title = strings.TrimSpace(item.Find("h3").First().Text())
+			tempData.Rating = strings.TrimSpace(item.Find(".ipc-rating-star--imdb").First().Text())
+
+			if tempData.Title != "" {
+				data = append(data, tempData)
+			}
 		})
 	})
-	c.OnHTML(".lister-list", func(e *colly.HTMLElement) {
-		e.ForEach("tr", func(i int, e *colly.HTMLElement) {
-			e.ForEach("a", func(_ int, el *colly.HTMLElement) {
-				if strings.TrimSpace(el.Text) != "" {
-					sign := "+"
-					if e.DOM.Find(".down").Length() == 1 {
-						sign = "-"
-					}
-					vel := strings.ReplaceAll(e.DOM.Find(".velocity").Text(), "\n", "")
-					slog.Debug(fmt.Sprintf("TV trend, get velocity from %s", vel))
-					vel = strings.Split(vel, "(")[1]
-					if vel == "no change)" {
-						sign = ""
-						vel = "0)"
-					}
-					slog.Debug(fmt.Sprintf("TV trend, get velocity from %s at %d", vel, len(vel)-1))
-					data2 = append(data2, TrendingTV{
-						Title:    el.Text,
-						Rank:     i,
-						Velocity: sign + vel[:len(vel)-1],
-						Rating:   strings.TrimSpace(e.DOM.Find(".imdbRating").Text()),
-					})
-				}
+
+	// Older site version
+	doc.Find(".lister-list").Each(func(_ int, table *goquery.Selection) {
+		table.Find("tr").Each(func(i int, row *goquery.Selection) {
+			title := strings.TrimSpace(row.Find("a").First().Text())
+			if title == "" {
+				return
+			}
+
+			sign := "+"
+			if row.Find(".down").Length() == 1 {
+				sign = "-"
+			}
+
+			vel := strings.ReplaceAll(strings.TrimSpace(row.Find(".velocity").Text()), "\n", "")
+			slog.Debug(fmt.Sprintf("TV trend, get velocity from %s", vel))
+
+			if start := strings.Index(vel, "("); start >= 0 {
+				vel = vel[start+1:]
+			} else {
+				vel = ""
+			}
+
+			if vel == "no change)" {
+				sign = ""
+				vel = "0)"
+			}
+
+			if strings.HasSuffix(vel, ")") {
+				vel = vel[:len(vel)-1]
+			}
+
+			slog.Debug(fmt.Sprintf("TV trend, final velocity %s", vel))
+
+			data2 = append(data2, TrendingTV{
+				Title:    title,
+				Rank:     i,
+				Velocity: sign + vel,
+				Rating:   strings.TrimSpace(row.Find(".imdbRating").First().Text()),
 			})
 		})
 	})
-	c.OnError(func(_ *colly.Response, err error) { check(err) })
-	c.Visit("https://www.imdb.com/chart/tvmeter")
+
+
+	var chosen []TrendingTV
+	if len(data) > len(data2) {
+		chosen = data
+	} else {
+		chosen = data2
+	}
+
+	if len(chosen) == 0 {
+		slog.Warn("no trending tv scraped")
+		return
+	}
+
 	db.Exec("DELETE FROM trending_tvs")
 	slog.Info(fmt.Sprintf("new site scraped = %d | old site scraped = %d", len(data), len(data2)))
-	// slog.Info(fmt.Sprintf("+%s tv", strconv.Itoa(len(data)+len(data2))))
-	var result *gorm.DB
-	if len(data) > len(data2) {
-		result = db.Create(data)
-	} else {
-		result = db.Create(data2)
+
+	result := db.Create(&chosen)
+	if result.Error != nil {
+		slog.Error("insert failed", "err", result.Error)
+		return
 	}
+
 	slog.Info(fmt.Sprintf("inserted %d tv", result.RowsAffected))
-	check(result.Error)
 }
 
 func scrapeTrendingMovies() {
-	// log := logger.With().Str("func", "scrapeTrendingMovies").Logger()
-	defer wg.Done()
+	// defer wg.Done()
+
 	var data []TrendingMovie
 	var data2 []TrendingMovie
-	c := colly.NewCollector()
 
-	// IMDB is splitting traffic between 2 versions of the site
-	// For now I am scraping both possible versions since
-	// idk which one nginx will give me
-	c.OnHTML(".compact-list-view", func(e *colly.HTMLElement) {
-		e.ForEach("li", func(j int, el *colly.HTMLElement) {
+	chromePath := os.Getenv("CHROME_PATH")
+	if chromePath == "" {
+		chromePath = "/usr/bin/chromium"
+	}
+
+	profileDir, errProf := os.MkdirTemp("/tmp", "chromedp-profile-*")
+	if errProf != nil {
+		slog.Error("chrome profile", "err", errProf)
+		return
+	}
+	defer os.RemoveAll(profileDir)
+
+	opts := append(chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.ExecPath(chromePath),
+		chromedp.Flag("headless", "new"),
+		chromedp.NoSandbox,
+		chromedp.Flag("disable-setuid-sandbox", true),
+		chromedp.Flag("disable-dev-shm-usage", true),
+		chromedp.Flag("no-zygote", true),
+		chromedp.Flag("single-process", true),
+		chromedp.Flag("disable-gpu", true),
+		chromedp.Flag("disable-software-rasterizer", true),
+		chromedp.Flag("disable-crash-reporter", true),
+		chromedp.Flag("disable-breakpad", true),
+		chromedp.Flag("disable-background-networking", true),
+		chromedp.Flag("user-data-dir", profileDir),
+		chromedp.Flag("data-path", profileDir),
+		chromedp.Flag("disk-cache-dir", "/tmp/chromedp-cache"),
+		chromedp.Flag("window-size", "1366,768"),
+		chromedp.UserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"),
+	)
+
+	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	defer cancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	ctx, cancel = context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+
+	var html string
+
+	err := chromedp.Run(ctx,
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			return network.Enable().Do(ctx)
+		}),
+		chromedp.Navigate("https://www.imdb.com/chart/moviemeter"),
+		chromedp.Sleep(2*time.Second),
+		chromedp.OuterHTML("html", &html, chromedp.ByQuery),
+	)
+	if err != nil {
+		slog.Error("chromedp failed", "err", err)
+		return
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		slog.Error("goquery parse failed", "err", err)
+		return
+	}
+
+	// Newer site version
+	doc.Find(".compact-list-view").Each(func(_ int, section *goquery.Selection) {
+		section.Find("li").Each(func(j int, item *goquery.Selection) {
 			var tempData TrendingMovie
+
 			sign := "-"
-			if el.DOM.Find(".rank-up").Length() == 1 {
+			if item.Find(".rank-up").Length() == 1 {
 				sign = "+"
 			}
-			vel := el.DOM.Find(".meter-const-ranking").Text()
+
+			vel := strings.TrimSpace(item.Find(".meter-const-ranking").Text())
 			slog.Debug(fmt.Sprintf("movies trend, get velocity from %s", vel))
-			vel = strings.Split(vel, "(")[1]
-			vel = strings.Split(vel, ")")[0]
+
+			if start := strings.Index(vel, "("); start >= 0 {
+				vel = vel[start+1:]
+				if end := strings.Index(vel, ")"); end >= 0 {
+					vel = vel[:end]
+				}
+			} else {
+				vel = ""
+			}
+
 			slog.Debug(fmt.Sprintf("movies trend, final velocity %s", vel))
+
 			if vel == "" {
 				sign = ""
 				vel = "no change"
@@ -144,52 +411,83 @@ func scrapeTrendingMovies() {
 
 			tempData.Velocity = sign + vel
 			tempData.Rank = j + 1
-			tempData.Title = strings.TrimSpace(el.DOM.Find("h3").Text())
-			tempData.Rating = strings.TrimSpace(el.DOM.Find(".ipc-rating-star--imdb").Text())
-			data = append(data, tempData)
+			tempData.Title = strings.TrimSpace(item.Find("h3").First().Text())
+			tempData.Rating = strings.TrimSpace(item.Find(".ipc-rating-star--imdb").First().Text())
+
+			if tempData.Title != "" {
+				data = append(data, tempData)
+			}
 		})
 	})
-	c.OnHTML(".lister-list", func(e *colly.HTMLElement) {
-		e.ForEach("tr", func(j int, el *colly.HTMLElement) {
+
+	// Older site version
+	doc.Find(".lister-list").Each(func(_ int, table *goquery.Selection) {
+		table.Find("tr").Each(func(j int, row *goquery.Selection) {
 			var tempData TrendingMovie
-			el.ForEach("td", func(i int, ele *colly.HTMLElement) {
+
+			row.Find("td").Each(func(i int, cell *goquery.Selection) {
 				if i == 1 {
 					sign := "+"
-					if ele.DOM.Find(".down").Length() == 1 {
+					if cell.Find(".down").Length() == 1 {
 						sign = "-"
 					}
-					vel := strings.ReplaceAll(ele.DOM.Find(".velocity").Text(), "\n", "")
+
+					vel := strings.ReplaceAll(strings.TrimSpace(cell.Find(".velocity").Text()), "\n", "")
 					slog.Debug(fmt.Sprintf("POP MOVIES, get velocity from %s", vel))
-					vel = strings.Split(vel, "(")[1]
+
+					if start := strings.Index(vel, "("); start >= 0 {
+						vel = vel[start+1:]
+					} else {
+						vel = ""
+					}
+
 					if vel == "no change)" {
 						sign = ""
 						vel = "0)"
 					}
-					slog.Debug(fmt.Sprintf("POP MOVIES, get velocity from %s at %d", vel, len(vel)-1))
-					tempData.Velocity = sign + vel[:len(vel)-1]
+
+					if strings.HasSuffix(vel, ")") {
+						vel = vel[:len(vel)-1]
+					}
+
+					slog.Debug(fmt.Sprintf("POP MOVIES, final velocity %s", vel))
+
+					tempData.Velocity = sign + vel
 					tempData.Rank = j + 1
-					tempData.Title = ele.DOM.Children().First().Text()
+					tempData.Title = strings.TrimSpace(cell.Children().First().Text())
 				} else if i == 2 {
-					tempData.Rating = strings.TrimSpace(ele.Text)
+					tempData.Rating = strings.TrimSpace(cell.Text())
 				}
 			})
-			data2 = append(data2, tempData)
+
+			if tempData.Title != "" {
+				data2 = append(data2, tempData)
+			}
 		})
 	})
-	c.OnError(func(_ *colly.Response, err error) { check(err) })
-	c.Visit("https://www.imdb.com/chart/moviemeter")
+
 	db.Exec("DELETE FROM trending_movies")
 
-	// again a split on site version means idk which data slice will have data
 	slog.Info(fmt.Sprintf("new site scraped = %d | old site scraped = %d", len(data), len(data2)))
 	slog.Info(fmt.Sprintf("scraped %d trending movies", len(data)+len(data2)))
 
-	var result *gorm.DB
+	var chosen []TrendingMovie
 	if len(data) > len(data2) {
-		result = db.Create(data)
+		chosen = data
 	} else {
-		result = db.Create(data2)
+		chosen = data2
 	}
+
+	if len(chosen) == 0 {
+		slog.Warn("no trending movies scraped")
+		return
+	}
+
+	result := db.Create(&chosen)
+	if result.Error != nil {
+		slog.Error("insert failed", "err", result.Error)
+		return
+	}
+
 	slog.Info(fmt.Sprintf("inserted %d trending movies", result.RowsAffected))
-	check(result.Error)
 }

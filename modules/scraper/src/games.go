@@ -12,7 +12,7 @@ var nonAlphanumericRegex = regexp.MustCompile(`[^a-zA-Z0-9 ]+`)
 var extraText = regexp.MustCompile(`Includes \d+ games`)
 
 func scrapeGames() {
-	defer wg.Done()
+	// defer wg.Done()
 	var data []TrendingGame
 	c := colly.NewCollector()
 	c.OnHTML("#search_resultsRows", func(e *colly.HTMLElement) {

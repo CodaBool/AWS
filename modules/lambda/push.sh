@@ -9,12 +9,8 @@ set -o pipefail
 path_to_dockerfile="$1"
 repository_url="$2"
 tag="${3:-latest}"
-
 region="$(echo "$repository_url" | cut -d. -f4)"
 image_name_and_tag="$(echo "$repository_url" | cut -d/ -f2)"
-
-# subshell
-(cd "$path_to_dockerfile" && docker build -t "$image_name_and_tag" .)
 
 # conditional to handle usage with aws ecr credential helper
 # https://github.com/awslabs/amazon-ecr-credential-helper
@@ -28,5 +24,12 @@ if [ -f ~/.docker/config.json ]; then
     fi
 fi
 
-docker tag "$image_name_and_tag" "$repository_url":"$tag"
-docker push "$repository_url":"$tag"
+
+# subshell
+(cd "$path_to_dockerfile" && \
+  docker buildx build \
+    --platform linux/arm64 \
+    --provenance=false \
+    -t "$repository_url":"$tag" \
+    --push \
+    .)
